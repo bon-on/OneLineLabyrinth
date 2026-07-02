@@ -14,7 +14,7 @@ class OneLineLabyrinthApp extends StatelessWidget {
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
         brightness: Brightness.dark,
-        scaffoldBackgroundColor: const Color(0xFF151515),
+        scaffoldBackgroundColor: const Color(0xFF141411),
         colorScheme: ColorScheme.fromSeed(
           seedColor: const Color(0xFFEAB308),
           brightness: Brightness.dark,
@@ -116,8 +116,8 @@ class _OneLineLabyrinthScreenState extends State<OneLineLabyrinthScreen> {
   @override
   Widget build(BuildContext context) {
     final status = _complete
-        ? 'Exit reached in one clean line.'
-        : 'Start at the dot, visit every open tile once, finish at the ring.';
+        ? 'Exit reached. The next level opens a longer path.'
+        : 'Tap adjacent open tiles. Cover every tile once, then end on the ring.';
     return Scaffold(
       body: SafeArea(
         child: Padding(
@@ -216,7 +216,7 @@ class _Header extends StatelessWidget {
       children: [
         const Expanded(
           child: Text(
-            'One Line',
+            'One Line Labyrinth',
             style: TextStyle(fontSize: 24, fontWeight: FontWeight.w900),
           ),
         ),
@@ -253,7 +253,7 @@ class _Metric extends StatelessWidget {
       height: 42,
       alignment: Alignment.center,
       decoration: BoxDecoration(
-        color: const Color(0xFF24211B),
+        color: const Color(0xFF24221C),
         borderRadius: BorderRadius.circular(8),
       ),
       child: Column(
@@ -295,8 +295,8 @@ class _LabyrinthTile extends StatelessWidget {
       color: !isOpen
           ? const Color(0xFF252525)
           : _visited
-          ? const Color(0xFFEAB308)
-          : const Color(0xFF39342A),
+          ? const Color(0xFFD6A936)
+          : const Color(0xFF3D3930),
       borderRadius: BorderRadius.circular(8),
       child: InkWell(
         borderRadius: BorderRadius.circular(8),
@@ -309,13 +309,37 @@ class _LabyrinthTile extends StatelessWidget {
   Widget _marker() {
     if (!isOpen) return const SizedBox.shrink();
     if (isStart) {
-      return const Icon(Icons.circle, size: 16, color: Color(0xFF151515));
+      return const Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(Icons.circle, size: 14, color: Color(0xFF141411)),
+          SizedBox(height: 2),
+          Text(
+            'START',
+            style: TextStyle(
+              color: Color(0xFF141411),
+              fontSize: 9,
+              fontWeight: FontWeight.w900,
+            ),
+          ),
+        ],
+      );
     }
     if (isFinish) {
-      return const Icon(
-        Icons.radio_button_unchecked,
-        size: 24,
-        color: Colors.white,
+      return const Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(Icons.radio_button_unchecked, size: 22, color: Colors.white),
+          SizedBox(height: 2),
+          Text(
+            'EXIT',
+            style: TextStyle(
+              color: Colors.white,
+              fontSize: 9,
+              fontWeight: FontWeight.w900,
+            ),
+          ),
+        ],
       );
     }
     if (_visited) {
