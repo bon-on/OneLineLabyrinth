@@ -34,8 +34,8 @@ class OneLineLabyrinthScreen extends StatefulWidget {
 }
 
 class _OneLineLabyrinthScreenState extends State<OneLineLabyrinthScreen> {
-  static const int size = 6;
   final math.Random _random = math.Random();
+  _Difficulty _difficulty = _Difficulty.easy;
   late Set<int> _open;
   late int _start;
   late int _finish;
@@ -43,6 +43,7 @@ class _OneLineLabyrinthScreenState extends State<OneLineLabyrinthScreen> {
   int _level = 1;
   int _attempts = 0;
 
+  int get _size => _difficulty.size;
   bool get _complete => _path.length == _open.length && _path.last == _finish;
 
   @override
@@ -51,30 +52,41 @@ class _OneLineLabyrinthScreenState extends State<OneLineLabyrinthScreen> {
     _newPuzzle();
   }
 
-  int _index(int row, int col) => row * size + col;
+  int _index(int row, int col) => row * _size + col;
 
   Iterable<int> _neighbors(int index) sync* {
-    final row = index ~/ size;
-    final col = index % size;
+    final row = index ~/ _size;
+    final col = index % _size;
     if (row > 0) yield _index(row - 1, col);
-    if (row + 1 < size) yield _index(row + 1, col);
+    if (row + 1 < _size) yield _index(row + 1, col);
     if (col > 0) yield _index(row, col - 1);
-    if (col + 1 < size) yield _index(row, col + 1);
+    if (col + 1 < _size) yield _index(row, col + 1);
   }
 
   void _newPuzzle() {
-    final snake = <int>[];
-    for (var row = 0; row < size; row++) {
-      final cols = row.isEven
-          ? Iterable<int>.generate(size)
-          : Iterable<int>.generate(size, (i) => size - 1 - i);
-      for (final col in cols) {
-        snake.add(_index(row, col));
+    final targetLength = math.min(
+      _difficulty.baseLength + _level * _difficulty.levelStep,
+      _size * _size,
+    );
+
+    List<int> bestPath = [];
+    for (var attempt = 0; attempt < 90; attempt++) {
+      final start = _random.nextInt(_size * _size);
+      final path = [start];
+      final seen = {start};
+      if (_growPath(path, seen, targetLength)) {
+        bestPath = path;
+        break;
+      }
+      if (path.length > bestPath.length) {
+        bestPath = List<int>.from(path);
       }
     }
 
-    final pathLength = math.min(12 + _level * 3, snake.length);
-    var orderedOpen = snake.take(pathLength).toList();
+    var orderedOpen = bestPath;
+    if (orderedOpen.length < 2) {
+      orderedOpen = [_index(0, 0), _index(0, 1)];
+    }
     if (_random.nextBool()) {
       orderedOpen = orderedOpen.reversed.toList();
     }
@@ -84,6 +96,33 @@ class _OneLineLabyrinthScreenState extends State<OneLineLabyrinthScreen> {
     _path = [_start];
     _attempts = 0;
     setState(() {});
+  }
+
+  bool _growPath(List<int> path, Set<int> seen, int targetLength) {
+    if (path.length >= targetLength) return true;
+    final current = path.last;
+    final candidates = _neighbors(
+      current,
+    ).where((index) => !seen.contains(index)).toList()..shuffle(_random);
+    candidates.sort(
+      (a, b) => _onwardCount(a, seen).compareTo(_onwardCount(b, seen)),
+    );
+
+    for (final next in candidates) {
+      seen.add(next);
+      path.add(next);
+      if (_growPath(path, seen, targetLength)) return true;
+      if (path.length > targetLength * 0.82 && _random.nextDouble() < 0.18) {
+        return false;
+      }
+      path.removeLast();
+      seen.remove(next);
+    }
+    return false;
+  }
+
+  int _onwardCount(int index, Set<int> seen) {
+    return _neighbors(index).where((next) => !seen.contains(next)).length;
   }
 
   void _resetPath() {
@@ -113,11 +152,18 @@ class _OneLineLabyrinthScreenState extends State<OneLineLabyrinthScreen> {
     _newPuzzle();
   }
 
+  void _selectDifficulty(_Difficulty difficulty) {
+    if (_difficulty == difficulty) return;
+    _difficulty = difficulty;
+    _level = 1;
+    _newPuzzle();
+  }
+
   @override
   Widget build(BuildContext context) {
     final status = _complete
         ? 'Exit reached. The next level opens a longer path.'
-        : 'Tap adjacent open tiles. Cover every tile once, then end on the ring.';
+        : 'Tap highlighted neighbors. Cover every open tile once, then end on the ring.';
     return Scaffold(
       body: SafeArea(
         child: Padding(
@@ -129,6 +175,8 @@ class _OneLineLabyrinthScreenState extends State<OneLineLabyrinthScreen> {
                 attempts: _attempts,
                 filled: _path.length,
                 total: _open.length,
+                difficulty: _difficulty,
+                onDifficultyChanged: _selectDifficulty,
                 onRestart: _resetPath,
                 onNewPuzzle: _newPuzzle,
               ),
@@ -145,10 +193,10 @@ class _OneLineLabyrinthScreenState extends State<OneLineLabyrinthScreen> {
                         dimension: boardSize,
                         child: GridView.builder(
                           physics: const NeverScrollableScrollPhysics(),
-                          itemCount: size * size,
+                          itemCount: _size * _size,
                           gridDelegate:
-                              const SliverGridDelegateWithFixedCrossAxisCount(
-                                crossAxisCount: size,
+                              SliverGridDelegateWithFixedCrossAxisCount(
+                                crossAxisCount: _size,
                                 crossAxisSpacing: 6,
                                 mainAxisSpacing: 6,
                               ),
@@ -159,6 +207,11 @@ class _OneLineLabyrinthScreenState extends State<OneLineLabyrinthScreen> {
                               isStart: index == _start,
                               isFinish: index == _finish,
                               order: _path.indexOf(index),
+                              isCandidate:
+                                  !_complete &&
+                                  _open.contains(index) &&
+                                  !_path.contains(index) &&
+                                  _neighbors(_path.last).contains(index),
                               onTap: () => _tapCell(index),
                             );
                           },
@@ -199,6 +252,8 @@ class _Header extends StatelessWidget {
     required this.attempts,
     required this.filled,
     required this.total,
+    required this.difficulty,
+    required this.onDifficultyChanged,
     required this.onRestart,
     required this.onNewPuzzle,
   });
@@ -207,35 +262,102 @@ class _Header extends StatelessWidget {
   final int attempts;
   final int filled;
   final int total;
+  final _Difficulty difficulty;
+  final ValueChanged<_Difficulty> onDifficultyChanged;
   final VoidCallback onRestart;
   final VoidCallback onNewPuzzle;
 
   @override
   Widget build(BuildContext context) {
-    return Row(
+    return Column(
       children: [
-        const Expanded(
-          child: Text(
-            'One Line Labyrinth',
-            style: TextStyle(fontSize: 24, fontWeight: FontWeight.w900),
-          ),
+        Row(
+          children: [
+            const Expanded(
+              child: Text(
+                'One Line Labyrinth',
+                style: TextStyle(fontSize: 24, fontWeight: FontWeight.w900),
+              ),
+            ),
+            IconButton(
+              onPressed: onRestart,
+              tooltip: 'Reset path',
+              icon: const Icon(Icons.undo),
+            ),
+            IconButton(
+              onPressed: onNewPuzzle,
+              tooltip: 'New puzzle',
+              icon: const Icon(Icons.shuffle),
+            ),
+          ],
         ),
-        _Metric(label: 'Level', value: '$level'),
-        const SizedBox(width: 6),
-        _Metric(label: 'Path', value: '$filled/$total'),
-        const SizedBox(width: 6),
-        _Metric(label: 'Tries', value: '$attempts'),
-        IconButton(
-          onPressed: onRestart,
-          tooltip: 'Reset path',
-          icon: const Icon(Icons.undo),
+        const SizedBox(height: 6),
+        Row(
+          children: [
+            Expanded(
+              child: _Metric(label: 'Level', value: '$level'),
+            ),
+            const SizedBox(width: 6),
+            Expanded(
+              child: _Metric(label: 'Path', value: '$filled/$total'),
+            ),
+            const SizedBox(width: 6),
+            Expanded(
+              child: _Metric(label: 'Tries', value: '$attempts'),
+            ),
+          ],
         ),
-        IconButton(
-          onPressed: onNewPuzzle,
-          tooltip: 'New puzzle',
-          icon: const Icon(Icons.shuffle),
+        const SizedBox(height: 8),
+        _DifficultyPicker(
+          difficulty: difficulty,
+          onChanged: onDifficultyChanged,
         ),
       ],
+    );
+  }
+}
+
+enum _Difficulty {
+  easy('Easy', 5, 10, 2),
+  normal('Normal', 6, 18, 3),
+  hard('Hard', 7, 30, 4);
+
+  const _Difficulty(this.label, this.size, this.baseLength, this.levelStep);
+
+  final String label;
+  final int size;
+  final int baseLength;
+  final int levelStep;
+}
+
+class _DifficultyPicker extends StatelessWidget {
+  const _DifficultyPicker({required this.difficulty, required this.onChanged});
+
+  final _Difficulty difficulty;
+  final ValueChanged<_Difficulty> onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    return SegmentedButton<_Difficulty>(
+      segments: [
+        for (final option in _Difficulty.values)
+          ButtonSegment<_Difficulty>(
+            value: option,
+            label: Text('${option.label} ${option.size}x${option.size}'),
+          ),
+      ],
+      selected: {difficulty},
+      onSelectionChanged: (selected) => onChanged(selected.first),
+      style: ButtonStyle(
+        visualDensity: VisualDensity.compact,
+        backgroundColor: WidgetStateProperty.resolveWith((states) {
+          if (states.contains(WidgetState.selected)) {
+            return const Color(0xFF443B25);
+          }
+          return const Color(0xFF1F1D18);
+        }),
+        foregroundColor: WidgetStateProperty.all(const Color(0xFFEDE2C0)),
+      ),
     );
   }
 }
@@ -277,6 +399,7 @@ class _LabyrinthTile extends StatelessWidget {
     required this.isStart,
     required this.isFinish,
     required this.order,
+    required this.isCandidate,
     required this.onTap,
   });
 
@@ -285,6 +408,7 @@ class _LabyrinthTile extends StatelessWidget {
   final bool isStart;
   final bool isFinish;
   final int order;
+  final bool isCandidate;
   final VoidCallback onTap;
 
   bool get _visited => order >= 0;
@@ -296,8 +420,15 @@ class _LabyrinthTile extends StatelessWidget {
           ? const Color(0xFF252525)
           : _visited
           ? const Color(0xFFD6A936)
+          : isCandidate
+          ? const Color(0xFF6B5D35)
           : const Color(0xFF3D3930),
-      borderRadius: BorderRadius.circular(8),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(8),
+        side: isCandidate
+            ? const BorderSide(color: Color(0xFFEDE2C0), width: 2)
+            : BorderSide.none,
+      ),
       child: InkWell(
         borderRadius: BorderRadius.circular(8),
         onTap: isOpen ? onTap : null,
