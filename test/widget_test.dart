@@ -8,7 +8,7 @@ void main() {
     await tester.pump();
 
     expect(find.byType(Scaffold), findsOneWidget);
-    expect(find.text('One Line'), findsOneWidget);
+    expect(find.text('One Line Labyrinth'), findsOneWidget);
     expect(find.text('Level'), findsOneWidget);
   });
 }
