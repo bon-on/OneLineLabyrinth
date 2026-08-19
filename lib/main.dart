@@ -210,6 +210,7 @@ class _OneLineLabyrinthScreenState extends State<OneLineLabyrinthScreen> {
         ? 'Exit reached. The next level adds knots and branches.'
         : 'Tap connected knots. Visit every knot once, then finish on the ring.';
     return Scaffold(
+      resizeToAvoidBottomInset: false,
       body: SafeArea(
         child: Padding(
           padding: const EdgeInsets.fromLTRB(14, 10, 14, 14),
