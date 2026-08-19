@@ -1,6 +1,7 @@
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
+import 'result_registration.dart';
 
 void main() => runApp(const OneLineLabyrinthApp());
 
@@ -43,6 +44,7 @@ class _OneLineLabyrinthScreenState extends State<OneLineLabyrinthScreen> {
   late List<int> _path;
   int _level = 1;
   int _attempts = 0;
+  final Stopwatch _stopwatch = Stopwatch();
 
   bool get _complete => _path.length == _nodes.length && _path.last == _finish;
 
@@ -76,6 +78,9 @@ class _OneLineLabyrinthScreenState extends State<OneLineLabyrinthScreen> {
     _finish = solution.last;
     _path = [_start];
     _attempts = 0;
+    _stopwatch
+      ..reset()
+      ..start();
     setState(() {});
   }
 
@@ -142,6 +147,24 @@ class _OneLineLabyrinthScreenState extends State<OneLineLabyrinthScreen> {
     if (!_neighbors(_path.last).contains(index)) return;
     _path.add(index);
     setState(() {});
+    if (_complete) {
+      _stopwatch.stop();
+      final seconds = math.max(
+        1,
+        (_stopwatch.elapsedMilliseconds / 1000).ceil(),
+      );
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) {
+          offerResultRegistration(
+            context,
+            gameId: 'one-line-labyrinth',
+            metric: 'time',
+            value: seconds,
+            displayValue: '${seconds}s',
+          );
+        }
+      });
+    }
   }
 
   void _nextLevel() {
