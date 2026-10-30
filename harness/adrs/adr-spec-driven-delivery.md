@@ -4,6 +4,7 @@ title: Make feature specs and ADRs the top AI source of truth
 status: accepted
 related_specs:
   - feature-harness-apply
+  - feature-grid-puzzle-generation
 ---
 
 # ADR: Make feature specs and ADRs the top AI source of truth
