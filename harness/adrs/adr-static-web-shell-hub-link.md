@@ -18,3 +18,6 @@ Reserve a static navigation bar above the Flutter web surface in web/index.html 
 - Players can return to game selection from every web game.
 - The control is independent of Flutter state and browser history.
 - Each game's web shell carries a small shared navigation style.
+- Flutter's full-page mode resets body padding, so the offset is implemented by
+  rendering Flutter into a `#game-host` element (`hostElement`) positioned below
+  the bar; the shell supplies its own viewport meta tag in this embedded mode.

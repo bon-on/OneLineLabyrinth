@@ -15,5 +15,7 @@ void main() {
     expect(html, contains('padding-top: var(--games-nav-height)'));
     expect(html, contains('top: var(--games-nav-height) !important'));
     expect(html, contains('height: calc(100% - var(--games-nav-height))'));
+    expect(html, contains('<div id="game-host"></div>'));
+    expect(html, contains("hostElement: document.getElementById('game-host')"));
   });
 }

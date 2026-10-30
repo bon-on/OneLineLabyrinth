@@ -17,6 +17,7 @@
   <base href="$FLUTTER_BASE_HREF">
 
   <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
   <meta content="IE=Edge" http-equiv="X-UA-Compatible">
   <meta name="description" content="A one-line path puzzle.">
 
@@ -33,9 +34,14 @@
   <link rel="manifest" href="manifest.json">
   <style>
     :root { --games-nav-height: calc(48px + env(safe-area-inset-top)); }
-    html, body { height: 100%; margin: 0; }
-    body { padding-top: var(--games-nav-height); }
-    flt-glass-pane {
+    html, body { height: 100%; margin: 0; overflow: hidden; }
+    body { box-sizing: border-box; padding-top: var(--games-nav-height); }
+    /* The app renders into its own host element placed below the
+       navigation bar (embedded mode), so no game content is covered. */
+    #game-host {
+      position: fixed;
+      left: 0;
+      right: 0;
       top: var(--games-nav-height) !important;
       height: calc(100% - var(--games-nav-height)) !important;
     }
@@ -65,6 +71,7 @@
   <nav class="games-nav-bar" aria-label="게임 내비게이션">
     <a class="games-home-link" href="https://bon-on.github.io/" aria-label="게임 선택 화면으로 돌아가기">← 게임 목록</a>
   </nav>
+  <div id="game-host"></div>
   <script>
     if ('serviceWorker' in navigator) {
       navigator.serviceWorker.getRegistrations().then((registrations) => {
@@ -80,7 +87,14 @@
   <script>
     {{flutter_js}}
     {{flutter_build_config}}
-    _flutter.loader.load();
+    _flutter.loader.load({
+      onEntrypointLoaded: async (engineInitializer) => {
+        const appRunner = await engineInitializer.initializeEngine({
+          hostElement: document.getElementById('game-host'),
+        });
+        await appRunner.runApp();
+      },
+    });
   </script>
 </body>
 </html>
