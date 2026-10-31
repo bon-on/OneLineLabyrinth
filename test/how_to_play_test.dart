@@ -252,6 +252,21 @@ void main() {
     expect(find.text(howToPlaySteps[1].text), findsOneWidget);
   });
 
+  testWidgets('Tab then Space cannot press HUD buttons behind the overlay', (
+    tester,
+  ) async {
+    final watch = Stopwatch();
+    await _pump(tester, _FakeTutorialStore(), stopwatch: watch);
+    expect(watch.isRunning, isFalse);
+    await tester.sendKeyEvent(LogicalKeyboardKey.tab);
+    await tester.pump();
+    await tester.sendKeyEvent(LogicalKeyboardKey.space);
+    await tester.pump();
+    // Space advanced the overlay (step 2) instead of pressing a HUD button.
+    expect(find.text(howToPlaySteps[1].text), findsOneWidget);
+    expect(watch.isRunning, isFalse);
+  });
+
   testWidgets('board ignores taps while the seen flag is still loading', (
     tester,
   ) async {

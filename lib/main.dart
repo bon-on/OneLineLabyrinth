@@ -368,7 +368,11 @@ class _OneLineLabyrinthScreenState extends State<OneLineLabyrinthScreen> {
             // Ignore touches until the stored tutorial flag has been read.
             child: AbsorbPointer(
               absorbing: _tutorialLoading,
-              child: _buildGame(header, board, footer),
+              // Keep Tab from moving focus to HUD buttons behind the overlay.
+              child: ExcludeFocus(
+                excluding: _tutorialLoading || _tutorialOpen,
+                child: _buildGame(header, board, footer),
+              ),
             ),
           ),
           if (_tutorialOpen)

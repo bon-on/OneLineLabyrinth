@@ -148,6 +148,25 @@ void main() {
     expect(platform.events, <String>['start', 'stop', 'start']);
   });
 
+  testWidgets('new puzzle after completion starts, tutorial toggle is quiet', (
+    tester,
+  ) async {
+    final platform = _FakePlatform();
+    await _pump(tester, platform, _Tutorial(seen: true));
+    await _solve(tester);
+    expect(platform.events, <String>['start', 'stop']);
+
+    await tester.tap(find.byTooltip('How to play'));
+    await tester.pump();
+    await tester.tap(find.text('Skip'));
+    await tester.pump();
+    expect(platform.events, <String>['start', 'stop']);
+
+    await tester.tap(find.byTooltip('New puzzle'));
+    await tester.pump();
+    expect(platform.events, <String>['start', 'stop', 'start']);
+  });
+
   testWidgets('leaderboard offer follows the platform', (tester) async {
     for (final allowed in <bool>[true, false]) {
       final platform = _FakePlatform(allowsResultRegistration: allowed);
