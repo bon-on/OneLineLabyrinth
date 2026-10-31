@@ -4,6 +4,7 @@ title: Use a build flag and platform adapter for the CrazyGames distribution
 status: accepted
 related_specs:
   - feature-one-line-labyrinth-crazygames
+  - feature-one-line-labyrinth-gamepix
 ---
 
 # ADR: Build flag and platform adapter for CrazyGames
@@ -28,3 +29,6 @@ outbound links, and expects SDK gameplay events.
 - SDK failures degrade to no-op behaviour.
 - The bundle depends on string replacements in the custom `web/index.html`;
   the script verifies them.
+
+## GamePix addendum
+GamePix builds (`--dart-define=GAMEPIX=true`, see `feature-one-line-labyrinth-gamepix`) reuse the no-op platform with `allowsResultRegistration == false` instead of an adapter: GamePix forbids third-party SDKs and external network use. The CrazyGames adapter is selected only by `CRAZYGAMES=true`.
