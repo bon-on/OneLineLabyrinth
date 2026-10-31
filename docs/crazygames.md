@@ -1,0 +1,56 @@
+# CrazyGames build
+
+Building with `--dart-define=CRAZYGAMES=true` enables the CrazyGames HTML5 SDK v3
+adapter. Normal web (GitHub Pages) and mobile builds do not use the SDK.
+
+## Build
+
+```sh
+tool/build_crazygames.sh
+```
+
+Output:
+
+- `build/crazygames/`: bundle folder
+- `build/one-line-labyrinth-crazygames.zip`: portal upload zip
+
+The script builds with `--base-href /` and `--no-web-resources-cdn`, then sets
+`<base href="./">`, inserts the SDK script before the Flutter loader, removes the
+Bon-on hub navigation bar (portals forbid outbound links), deletes `*.symbols`, and
+checks file count (<= 1500) and size (<= 50MB).
+
+## Tests
+
+```sh
+flutter test                              # game flow with a fake platform (VM)
+flutter test --platform chrome test/web   # SDK adapter (Chrome)
+```
+
+## Local check
+
+```sh
+cd build && python3 -m http.server 8765
+# open http://localhost:8765/crazygames/index.html
+```
+
+On `localhost` the SDK environment is `local`; the console logs the SDK calls.
+
+## SDK events
+
+| When | Call |
+|---|---|
+| Startup | `SDK.init()`; SDK is disabled unless environment is `crazygames` or `local` |
+| Tutorial flag read and overlay not shown (first launch: overlay closed) | `gameplayStart` |
+| "How to play" overlay opens | `gameplayStop` |
+| Overlay closes | `gameplayStart` |
+| Level complete | `gameplayStop` |
+| Next Level / new puzzle / difficulty change after completion | `gameplayStart` |
+
+Leaderboard registration is not offered in this build, and no ads are used.
+
+## Upload notes
+
+- Orientation: portrait and landscape are both supported; the layout adapts.
+- Input: touch/mouse tap and drag (keyboard is not required).
+- Covers still needed (not created): 1920x1080, 800x1200, 800x800.
+- Submit with Basic Launch first.

@@ -39,3 +39,7 @@ flutter build web --release --base-href /OneLineLabyrinth/
 ```
 
 GitHub Pages deploys from `.github/workflows/deploy-pages.yml`.
+
+## CrazyGames Build
+
+`tool/build_crazygames.sh` builds `build/one-line-labyrinth-crazygames.zip` for the CrazyGames portal (SDK events, no hub link, no leaderboard). See `docs/crazygames.md`.

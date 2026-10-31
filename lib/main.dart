@@ -4,10 +4,16 @@ import 'package:flutter/material.dart';
 
 import 'best_level_store.dart';
 import 'how_to_play.dart';
+import 'platform/game_platform.dart';
 import 'puzzle_generator.dart';
 import 'result_registration.dart';
 
-void main() => runApp(const OneLineLabyrinthApp());
+Future<void> main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  final platform = createGamePlatform();
+  await platform.initialize();
+  runApp(OneLineLabyrinthApp(platform: platform));
+}
 
 const _textColor = Color(0xFFE7DEC3);
 const _mutedColor = Color(0xFFC1B48C);
@@ -19,6 +25,7 @@ class OneLineLabyrinthApp extends StatelessWidget {
     this.bestLevelStore,
     this.tutorialStore,
     this.stopwatch,
+    this.platform = const NoopGamePlatform(),
   });
 
   /// Injectable randomness for deterministic tests.
@@ -28,6 +35,9 @@ class OneLineLabyrinthApp extends StatelessWidget {
 
   /// Injectable solve timer so tests can observe pausing.
   final Stopwatch? stopwatch;
+
+  /// Portal hooks (CrazyGames SDK events, leaderboard gate).
+  final GamePlatform platform;
 
   @override
   Widget build(BuildContext context) {
@@ -48,6 +58,7 @@ class OneLineLabyrinthApp extends StatelessWidget {
         bestLevelStore: bestLevelStore,
         tutorialStore: tutorialStore,
         stopwatch: stopwatch,
+        platform: platform,
       ),
     );
   }
@@ -60,12 +71,16 @@ class OneLineLabyrinthScreen extends StatefulWidget {
     this.bestLevelStore,
     this.tutorialStore,
     this.stopwatch,
+    this.platform = const NoopGamePlatform(),
   });
 
   final math.Random? random;
   final BestLevelStore? bestLevelStore;
   final TutorialStore? tutorialStore;
   final Stopwatch? stopwatch;
+
+  /// Portal hooks (CrazyGames SDK events, leaderboard gate).
+  final GamePlatform platform;
 
   @override
   State<OneLineLabyrinthScreen> createState() => _OneLineLabyrinthScreenState();
@@ -89,6 +104,11 @@ class _OneLineLabyrinthScreenState extends State<OneLineLabyrinthScreen> {
       widget.tutorialStore ?? const TutorialStore();
   late final Stopwatch _stopwatch = widget.stopwatch ?? Stopwatch();
   bool _tutorialOpen = false;
+  // True until the stored tutorial flag has been read, so gameplayStart is
+  // not reported before we know whether the tutorial is about to open.
+  bool _tutorialLoading = true;
+  // Whether the platform currently believes gameplay is running.
+  bool _gameplayActive = false;
 
   bool get _complete =>
       _path.length == _puzzle.nodeCount && _path.last == _puzzle.finish;
@@ -103,8 +123,26 @@ class _OneLineLabyrinthScreenState extends State<OneLineLabyrinthScreen> {
 
   Future<void> _maybeShowTutorial() async {
     final seen = await _tutorialStore.isSeen();
-    if (!mounted || seen) return;
-    _openTutorial();
+    if (!mounted) return;
+    _tutorialLoading = false;
+    if (seen) {
+      _syncGameplay();
+    } else {
+      _openTutorial();
+    }
+  }
+
+  /// Reports gameplay start/stop to the platform exactly on transitions:
+  /// playing means no tutorial and an unsolved puzzle.
+  void _syncGameplay() {
+    final wantActive = !_tutorialLoading && !_tutorialOpen && !_complete;
+    if (wantActive == _gameplayActive) return;
+    _gameplayActive = wantActive;
+    if (wantActive) {
+      widget.platform.gameplayStart();
+    } else {
+      widget.platform.gameplayStop();
+    }
   }
 
   void _openTutorial() {
@@ -112,6 +150,7 @@ class _OneLineLabyrinthScreenState extends State<OneLineLabyrinthScreen> {
     // Time spent reading the tutorial must not count towards the solve time.
     _stopwatch.stop();
     setState(() => _tutorialOpen = true);
+    _syncGameplay();
   }
 
   void _closeTutorial() {
@@ -119,6 +158,7 @@ class _OneLineLabyrinthScreenState extends State<OneLineLabyrinthScreen> {
     _tutorialStore.markSeen();
     if (!_complete) _stopwatch.start();
     setState(() => _tutorialOpen = false);
+    _syncGameplay();
   }
 
   Future<void> _loadBestLevels() async {
@@ -142,6 +182,7 @@ class _OneLineLabyrinthScreenState extends State<OneLineLabyrinthScreen> {
       ..reset()
       ..start();
     setState(() {});
+    _syncGameplay();
   }
 
   void _resetPath() {
@@ -168,13 +209,14 @@ class _OneLineLabyrinthScreenState extends State<OneLineLabyrinthScreen> {
   void _onComplete() {
     _stopwatch.stop();
     _dragNode = null;
+    _syncGameplay();
     if (_level > _bestLevels[_difficulty]!) {
       _bestLevels[_difficulty] = _level;
       _store.save(_difficulty.name, _level);
     }
     final seconds = math.max(1, (_stopwatch.elapsedMilliseconds / 1000).ceil());
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (mounted) {
+      if (mounted && widget.platform.allowsResultRegistration) {
         offerResultRegistration(
           context,
           gameId: 'one-line-labyrinth',
