@@ -255,6 +255,47 @@ void main() {
       );
     });
 
+    testWidgets('dragging plays steps and stays silent over unlinked knots', (
+      tester,
+    ) async {
+      final player = _RecordingPlayer();
+      await _pump(tester, SoundFx(player: player));
+      final puzzle = _puzzle();
+      final solution = puzzle.solution;
+      Offset at(int i) => _at(tester, puzzle, i);
+      final unlinked = List<int>.generate(puzzle.nodeCount, (i) => i)
+          .firstWhere(
+            (i) =>
+                i != solution[0] && !puzzle.neighbors(solution[0]).contains(i),
+          );
+
+      final gesture = await tester.startGesture(at(solution[0]));
+      // Skim over an unlinked knot first: silent.
+      for (var s = 1; s <= 8; s++) {
+        await gesture.moveTo(
+          Offset.lerp(at(solution[0]), at(unlinked), s / 8)!,
+        );
+        await tester.pump();
+      }
+      expect(player.played, isNot(contains('assets/audio/invalid.wav')));
+      for (var k = 1; k < solution.length; k++) {
+        for (var s = 1; s <= 4; s++) {
+          await gesture.moveTo(
+            Offset.lerp(
+              k == 1 ? at(unlinked) : at(solution[k - 1]),
+              at(solution[k]),
+              s / 4,
+            )!,
+          );
+          await tester.pump();
+        }
+      }
+      await gesture.up();
+      await tester.pump();
+      expect(player.played, isNot(contains('assets/audio/invalid.wav')));
+      expect(player.played.where((a) => a.endsWith('step.wav')), isNotEmpty);
+    });
+
     testWidgets('reset path plays undo only when it changes something', (
       tester,
     ) async {

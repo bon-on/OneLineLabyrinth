@@ -67,7 +67,7 @@ void main() {
     expect(find.text('Best'), findsOneWidget);
   });
 
-  for (final size in const [Size(390, 844), Size(1280, 720)]) {
+  for (final size in const [Size(390, 844), Size(844, 390), Size(1280, 720)]) {
     testWidgets('layout fits without overflow at $size', (tester) async {
       await _pumpGame(tester, size, _MemoryBestLevelStore());
       await tester.pump();

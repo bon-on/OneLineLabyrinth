@@ -312,8 +312,11 @@ class _OneLineLabyrinthScreenState extends State<OneLineLabyrinthScreen> {
     if (index == null || index == _dragNode) return;
     _dragNode = index;
     _dragging = true;
-    _stepTo(index);
-    _dragging = false;
+    try {
+      _stepTo(index);
+    } finally {
+      _dragging = false;
+    }
   }
 
   @override

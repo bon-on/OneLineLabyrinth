@@ -27,7 +27,7 @@ iOS and Android, and players need a way to turn them off.
 - Four short effects in `assets/audio/` (mono 44.1 kHz 16-bit WAV, each under
   40 KB): `step` (a knot joins the line), `undo` (stepping back onto the
   previous knot, or a reset that clears the line), `invalid` (a tap on a knot
-  that is visited or not linked to the line end) and `solved` (the ring is
+  other than the line end that is visited or not linked to the line end) and `solved` (the ring is
   reached with every knot filled; replaces `step` for that move).
 - Sounds are synthesized by the committed, dependency-free generator
   `tool/generate_sounds.py` (Python 3 stdlib, fixed seed, deterministic).
