@@ -124,7 +124,7 @@ class _OneLineLabyrinthScreenState extends State<OneLineLabyrinthScreen> {
   Future<void> _maybeShowTutorial() async {
     final seen = await _tutorialStore.isSeen();
     if (!mounted) return;
-    _tutorialLoading = false;
+    setState(() => _tutorialLoading = false);
     if (seen) {
       _syncGameplay();
     } else {
@@ -364,7 +364,13 @@ class _OneLineLabyrinthScreenState extends State<OneLineLabyrinthScreen> {
       resizeToAvoidBottomInset: false,
       body: Stack(
         children: [
-          Positioned.fill(child: _buildGame(header, board, footer)),
+          Positioned.fill(
+            // Ignore touches until the stored tutorial flag has been read.
+            child: AbsorbPointer(
+              absorbing: _tutorialLoading,
+              child: _buildGame(header, board, footer),
+            ),
+          ),
           if (_tutorialOpen)
             Positioned.fill(child: HowToPlayOverlay(onClose: _closeTutorial)),
         ],

@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
@@ -235,4 +236,46 @@ void main() {
     await tester.pump();
     expect(find.text(howToPlaySteps[1].text), findsOneWidget);
   });
+
+  testWidgets('Ctrl/Alt shortcuts and Tab are not consumed by the overlay', (
+    tester,
+  ) async {
+    await _pump(tester, _FakeTutorialStore());
+    await tester.sendKeyDownEvent(LogicalKeyboardKey.control);
+    await tester.sendKeyEvent(LogicalKeyboardKey.enter);
+    await tester.sendKeyUpEvent(LogicalKeyboardKey.control);
+    await tester.pump();
+    expect(find.text(howToPlaySteps[0].text), findsOneWidget);
+
+    await tester.sendKeyEvent(LogicalKeyboardKey.enter);
+    await tester.pump();
+    expect(find.text(howToPlaySteps[1].text), findsOneWidget);
+  });
+
+  testWidgets('board ignores taps while the seen flag is still loading', (
+    tester,
+  ) async {
+    final gate = Completer<bool>();
+    await _pump(tester, _PendingStore(gate.future));
+    final puzzle = _puzzle;
+    await tester.tapAt(_node(tester, puzzle, puzzle.solution[1]));
+    await tester.pump();
+    expect(find.text('1/${puzzle.nodeCount}'), findsOneWidget);
+
+    gate.complete(true);
+    await tester.pump();
+    await tester.pump();
+    await tester.tapAt(_node(tester, puzzle, puzzle.solution[1]));
+    await tester.pump();
+    expect(find.text('2/${puzzle.nodeCount}'), findsOneWidget);
+  });
+}
+
+class _PendingStore extends _FakeTutorialStore {
+  _PendingStore(this.result);
+
+  final Future<bool> result;
+
+  @override
+  Future<bool> isSeen() => result;
 }

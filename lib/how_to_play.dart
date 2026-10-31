@@ -101,8 +101,17 @@ class _HowToPlayOverlayState extends State<HowToPlayOverlay> {
   }
 
   KeyEventResult _onKey(FocusNode node, KeyEvent event) {
-    if (event is KeyUpEvent) return KeyEventResult.handled;
     final key = event.logicalKey;
+    // Browser/OS shortcuts (Tab, F5, Ctrl/Cmd/Alt combos) stay with the host.
+    final keyboard = HardwareKeyboard.instance;
+    if (key == LogicalKeyboardKey.tab ||
+        key == LogicalKeyboardKey.f5 ||
+        keyboard.isControlPressed ||
+        keyboard.isMetaPressed ||
+        keyboard.isAltPressed) {
+      return KeyEventResult.ignored;
+    }
+    if (event is KeyUpEvent) return KeyEventResult.handled;
     if (event is KeyDownEvent) {
       if (key == LogicalKeyboardKey.enter ||
           key == LogicalKeyboardKey.numpadEnter ||
