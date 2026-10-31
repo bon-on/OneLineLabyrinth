@@ -3,6 +3,7 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 
 import 'best_level_store.dart';
+import 'how_to_play.dart';
 import 'puzzle_generator.dart';
 import 'result_registration.dart';
 
@@ -12,11 +13,21 @@ const _textColor = Color(0xFFE7DEC3);
 const _mutedColor = Color(0xFFC1B48C);
 
 class OneLineLabyrinthApp extends StatelessWidget {
-  const OneLineLabyrinthApp({super.key, this.random, this.bestLevelStore});
+  const OneLineLabyrinthApp({
+    super.key,
+    this.random,
+    this.bestLevelStore,
+    this.tutorialStore,
+    this.stopwatch,
+  });
 
   /// Injectable randomness for deterministic tests.
   final math.Random? random;
   final BestLevelStore? bestLevelStore;
+  final TutorialStore? tutorialStore;
+
+  /// Injectable solve timer so tests can observe pausing.
+  final Stopwatch? stopwatch;
 
   @override
   Widget build(BuildContext context) {
@@ -35,16 +46,26 @@ class OneLineLabyrinthApp extends StatelessWidget {
       home: OneLineLabyrinthScreen(
         random: random,
         bestLevelStore: bestLevelStore,
+        tutorialStore: tutorialStore,
+        stopwatch: stopwatch,
       ),
     );
   }
 }
 
 class OneLineLabyrinthScreen extends StatefulWidget {
-  const OneLineLabyrinthScreen({super.key, this.random, this.bestLevelStore});
+  const OneLineLabyrinthScreen({
+    super.key,
+    this.random,
+    this.bestLevelStore,
+    this.tutorialStore,
+    this.stopwatch,
+  });
 
   final math.Random? random;
   final BestLevelStore? bestLevelStore;
+  final TutorialStore? tutorialStore;
+  final Stopwatch? stopwatch;
 
   @override
   State<OneLineLabyrinthScreen> createState() => _OneLineLabyrinthScreenState();
@@ -64,7 +85,10 @@ class _OneLineLabyrinthScreenState extends State<OneLineLabyrinthScreen> {
   int _level = 1;
   int _attempts = 0;
   int? _dragNode;
-  final Stopwatch _stopwatch = Stopwatch();
+  late final TutorialStore _tutorialStore =
+      widget.tutorialStore ?? const TutorialStore();
+  late final Stopwatch _stopwatch = widget.stopwatch ?? Stopwatch();
+  bool _tutorialOpen = false;
 
   bool get _complete =>
       _path.length == _puzzle.nodeCount && _path.last == _puzzle.finish;
@@ -74,6 +98,27 @@ class _OneLineLabyrinthScreenState extends State<OneLineLabyrinthScreen> {
     super.initState();
     _newPuzzle();
     _loadBestLevels();
+    _maybeShowTutorial();
+  }
+
+  Future<void> _maybeShowTutorial() async {
+    final seen = await _tutorialStore.isSeen();
+    if (!mounted || seen) return;
+    _openTutorial();
+  }
+
+  void _openTutorial() {
+    if (_tutorialOpen) return;
+    // Time spent reading the tutorial must not count towards the solve time.
+    _stopwatch.stop();
+    setState(() => _tutorialOpen = true);
+  }
+
+  void _closeTutorial() {
+    if (!_tutorialOpen) return;
+    _tutorialStore.markSeen();
+    if (!_complete) _stopwatch.start();
+    setState(() => _tutorialOpen = false);
   }
 
   Future<void> _loadBestLevels() async {
@@ -210,6 +255,7 @@ class _OneLineLabyrinthScreenState extends State<OneLineLabyrinthScreen> {
       onDifficultyChanged: _selectDifficulty,
       onRestart: _resetPath,
       onNewPuzzle: _newPuzzle,
+      onHelp: _openTutorial,
     );
     final footer = SizedBox(
       height: 104,
@@ -274,57 +320,67 @@ class _OneLineLabyrinthScreenState extends State<OneLineLabyrinthScreen> {
 
     return Scaffold(
       resizeToAvoidBottomInset: false,
-      body: SafeArea(
-        child: LayoutBuilder(
-          builder: (context, constraints) {
-            final landscape =
-                constraints.maxWidth >= 760 &&
-                constraints.maxWidth > constraints.maxHeight * 1.15;
-            if (landscape) {
-              return Center(
-                child: ConstrainedBox(
-                  constraints: const BoxConstraints(maxWidth: 1080),
-                  child: Padding(
-                    padding: const EdgeInsets.all(20),
-                    child: Row(
-                      children: [
-                        SizedBox(
-                          width: 320,
-                          child: Column(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              header,
-                              const SizedBox(height: 16),
-                              footer,
-                            ],
-                          ),
-                        ),
-                        const SizedBox(width: 28),
-                        Expanded(child: board),
-                      ],
-                    ),
-                  ),
-                ),
-              );
-            }
+      body: Stack(
+        children: [
+          Positioned.fill(child: _buildGame(header, board, footer)),
+          if (_tutorialOpen)
+            Positioned.fill(child: HowToPlayOverlay(onClose: _closeTutorial)),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildGame(Widget header, Widget board, Widget footer) {
+    return SafeArea(
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          final landscape =
+              constraints.maxWidth >= 760 &&
+              constraints.maxWidth > constraints.maxHeight * 1.15;
+          if (landscape) {
             return Center(
               child: ConstrainedBox(
-                constraints: const BoxConstraints(maxWidth: 560),
+                constraints: const BoxConstraints(maxWidth: 1080),
                 child: Padding(
-                  padding: const EdgeInsets.fromLTRB(14, 10, 14, 6),
-                  child: Column(
+                  padding: const EdgeInsets.all(20),
+                  child: Row(
                     children: [
-                      header,
-                      const SizedBox(height: 12),
+                      SizedBox(
+                        width: 320,
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            header,
+                            const SizedBox(height: 16),
+                            footer,
+                          ],
+                        ),
+                      ),
+                      const SizedBox(width: 28),
                       Expanded(child: board),
-                      footer,
                     ],
                   ),
                 ),
               ),
             );
-          },
-        ),
+          }
+          return Center(
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 560),
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(14, 10, 14, 6),
+                child: Column(
+                  children: [
+                    header,
+                    const SizedBox(height: 12),
+                    Expanded(child: board),
+                    footer,
+                  ],
+                ),
+              ),
+            ),
+          );
+        },
       ),
     );
   }
@@ -341,6 +397,7 @@ class _Header extends StatelessWidget {
     required this.onDifficultyChanged,
     required this.onRestart,
     required this.onNewPuzzle,
+    required this.onHelp,
   });
 
   final int level;
@@ -352,6 +409,7 @@ class _Header extends StatelessWidget {
   final ValueChanged<PuzzleDifficulty> onDifficultyChanged;
   final VoidCallback onRestart;
   final VoidCallback onNewPuzzle;
+  final VoidCallback onHelp;
 
   @override
   Widget build(BuildContext context) {
@@ -375,6 +433,11 @@ class _Header extends StatelessWidget {
               onPressed: onNewPuzzle,
               tooltip: 'New puzzle',
               icon: const Icon(Icons.shuffle),
+            ),
+            IconButton(
+              onPressed: onHelp,
+              tooltip: 'How to play',
+              icon: const Icon(Icons.help_outline),
             ),
           ],
         ),

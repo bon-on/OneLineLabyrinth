@@ -15,6 +15,7 @@ exactly once and only moving along the drawn links.
 - Tap knots one by one or drag across them. Tap or drag back onto the previous
   knot to undo a step; the undo button resets the line, the shuffle button deals
   a new puzzle.
+- A first-run "How to play" card (skippable; reopen with the ? button) explains the rules and is remembered via `tutorial_seen_v1`.
 - The best completed level per difficulty is saved locally.
 - After finishing a level you can optionally register your time on the shared
   leaderboard.

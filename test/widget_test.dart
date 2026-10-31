@@ -3,6 +3,7 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:one_line_labyrinth/best_level_store.dart';
+import 'package:one_line_labyrinth/how_to_play.dart';
 import 'package:one_line_labyrinth/main.dart';
 import 'package:one_line_labyrinth/puzzle_generator.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -19,6 +20,13 @@ class _MemoryBestLevelStore extends BestLevelStore {
   Future<void> save(String difficultyName, int level) async {
     saved[difficultyName] = math.max(saved[difficultyName] ?? 0, level);
   }
+}
+
+class _SeenTutorialStore extends TutorialStore {
+  const _SeenTutorialStore();
+
+  @override
+  Future<bool> isSeen() async => true;
 }
 
 const _seed = 3;
@@ -40,7 +48,11 @@ Future<void> _pumpGame(WidgetTester tester, Size size, BestLevelStore store) {
   tester.view.devicePixelRatio = 1;
   addTearDown(tester.view.reset);
   return tester.pumpWidget(
-    OneLineLabyrinthApp(random: math.Random(_seed), bestLevelStore: store),
+    OneLineLabyrinthApp(
+      random: math.Random(_seed),
+      bestLevelStore: store,
+      tutorialStore: const _SeenTutorialStore(),
+    ),
   );
 }
 
@@ -172,7 +184,10 @@ void main() {
   });
 
   testWidgets('stored best level appears in the HUD', (tester) async {
-    SharedPreferences.setMockInitialValues({'best_level_easy': 7});
+    SharedPreferences.setMockInitialValues({
+      'best_level_easy': 7,
+      TutorialStore.key: true,
+    });
     tester.view.physicalSize = const Size(390, 844);
     tester.view.devicePixelRatio = 1;
     addTearDown(tester.view.reset);

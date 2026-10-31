@@ -4,6 +4,7 @@ title: Deliver grid puzzle generation and responsive board
 status: active
 related_specs:
   - feature-grid-puzzle-generation
+  - feature-how-to-play-tutorial
 evidence_files:
   - reports/grid-puzzle-generation-audit.md
 ---
