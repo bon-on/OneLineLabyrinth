@@ -48,6 +48,8 @@ On `localhost` the SDK environment is `local`; the console logs the SDK calls.
 
 Leaderboard registration is not offered in this build, and no ads are used.
 
+Sound: effects are muted while `SDK.game.settings.muteAudio` is true (read on every sound), in addition to the player's own sound toggle.
+
 ## Upload notes
 
 - Orientation: portrait and landscape are both supported; the layout adapts.

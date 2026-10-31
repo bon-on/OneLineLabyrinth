@@ -7,6 +7,7 @@ import 'how_to_play.dart';
 import 'platform/game_platform.dart';
 import 'puzzle_generator.dart';
 import 'result_registration.dart';
+import 'src/audio/sound_fx.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -26,6 +27,7 @@ class OneLineLabyrinthApp extends StatelessWidget {
     this.tutorialStore,
     this.stopwatch,
     this.platform = const NoopGamePlatform(),
+    this.soundFx,
   });
 
   /// Injectable randomness for deterministic tests.
@@ -38,6 +40,9 @@ class OneLineLabyrinthApp extends StatelessWidget {
 
   /// Portal hooks (CrazyGames SDK events, leaderboard gate).
   final GamePlatform platform;
+
+  /// Injectable sound effects; tests pass a recording one.
+  final SoundFx? soundFx;
 
   @override
   Widget build(BuildContext context) {
@@ -59,6 +64,7 @@ class OneLineLabyrinthApp extends StatelessWidget {
         tutorialStore: tutorialStore,
         stopwatch: stopwatch,
         platform: platform,
+        soundFx: soundFx,
       ),
     );
   }
@@ -72,6 +78,7 @@ class OneLineLabyrinthScreen extends StatefulWidget {
     this.tutorialStore,
     this.stopwatch,
     this.platform = const NoopGamePlatform(),
+    this.soundFx,
   });
 
   final math.Random? random;
@@ -81,6 +88,9 @@ class OneLineLabyrinthScreen extends StatefulWidget {
 
   /// Portal hooks (CrazyGames SDK events, leaderboard gate).
   final GamePlatform platform;
+
+  /// Sound effects and mute switch; defaults to the real player.
+  final SoundFx? soundFx;
 
   @override
   State<OneLineLabyrinthScreen> createState() => _OneLineLabyrinthScreenState();
@@ -100,6 +110,8 @@ class _OneLineLabyrinthScreenState extends State<OneLineLabyrinthScreen> {
   int _level = 1;
   int _attempts = 0;
   int? _dragNode;
+  // True while a pan gesture is feeding _stepTo (no error sound then).
+  bool _dragging = false;
   late final TutorialStore _tutorialStore =
       widget.tutorialStore ?? const TutorialStore();
   late final Stopwatch _stopwatch = widget.stopwatch ?? Stopwatch();
@@ -109,6 +121,8 @@ class _OneLineLabyrinthScreenState extends State<OneLineLabyrinthScreen> {
   bool _tutorialLoading = true;
   // Whether the platform currently believes gameplay is running.
   bool _gameplayActive = false;
+  late final SoundFx _sound =
+      widget.soundFx ?? SoundFx(platform: widget.platform);
 
   bool get _complete =>
       _path.length == _puzzle.nodeCount && _path.last == _puzzle.finish;
@@ -116,9 +130,22 @@ class _OneLineLabyrinthScreenState extends State<OneLineLabyrinthScreen> {
   @override
   void initState() {
     super.initState();
+    _sound.addListener(_onSoundChanged);
+    if (widget.soundFx == null) _sound.load();
     _newPuzzle();
     _loadBestLevels();
     _maybeShowTutorial();
+  }
+
+  void _onSoundChanged() {
+    if (mounted) setState(() {});
+  }
+
+  @override
+  void dispose() {
+    _sound.removeListener(_onSoundChanged);
+    if (widget.soundFx == null) _sound.dispose();
+    super.dispose();
   }
 
   Future<void> _maybeShowTutorial() async {
@@ -187,6 +214,7 @@ class _OneLineLabyrinthScreenState extends State<OneLineLabyrinthScreen> {
 
   void _resetPath() {
     if (_complete || _path.length == 1) return;
+    _sound.play(Sfx.undo);
     _attempts++;
     _path = [_puzzle.start];
     setState(() {});
@@ -196,13 +224,19 @@ class _OneLineLabyrinthScreenState extends State<OneLineLabyrinthScreen> {
     if (_complete || index == _path.last) return;
 
     if (_path.length >= 2 && index == _path[_path.length - 2]) {
+      _sound.play(Sfx.undo);
       setState(() => _path = [..._path]..removeLast());
       return;
     }
 
-    if (_path.contains(index)) return;
-    if (!_puzzle.neighbors(_path.last).contains(index)) return;
+    if (_path.contains(index) ||
+        !_puzzle.neighbors(_path.last).contains(index)) {
+      // Drags skim past other knots on purpose; only a tap is an error.
+      if (!_dragging) _sound.play(Sfx.invalid);
+      return;
+    }
     setState(() => _path = [..._path, index]);
+    _sound.play(_complete ? Sfx.solved : Sfx.step);
     if (_complete) _onComplete();
   }
 
@@ -277,7 +311,9 @@ class _OneLineLabyrinthScreenState extends State<OneLineLabyrinthScreen> {
     final index = _hitNode(position, boardSize, 0.32);
     if (index == null || index == _dragNode) return;
     _dragNode = index;
+    _dragging = true;
     _stepTo(index);
+    _dragging = false;
   }
 
   @override
@@ -298,6 +334,8 @@ class _OneLineLabyrinthScreenState extends State<OneLineLabyrinthScreen> {
       onRestart: _resetPath,
       onNewPuzzle: _newPuzzle,
       onHelp: _openTutorial,
+      soundMuted: _sound.userMuted,
+      onToggleSound: _sound.toggle,
     );
     final footer = SizedBox(
       height: 104,
@@ -450,6 +488,8 @@ class _Header extends StatelessWidget {
     required this.onRestart,
     required this.onNewPuzzle,
     required this.onHelp,
+    required this.soundMuted,
+    required this.onToggleSound,
   });
 
   final int level;
@@ -462,6 +502,8 @@ class _Header extends StatelessWidget {
   final VoidCallback onRestart;
   final VoidCallback onNewPuzzle;
   final VoidCallback onHelp;
+  final bool soundMuted;
+  final VoidCallback onToggleSound;
 
   @override
   Widget build(BuildContext context) {
@@ -471,9 +513,14 @@ class _Header extends StatelessWidget {
         Row(
           children: [
             const Expanded(
-              child: Text(
-                'One Line Labyrinth',
-                style: TextStyle(fontSize: 24, fontWeight: FontWeight.w900),
+              // Four icon buttons leave little room; shrink instead of wrapping.
+              child: FittedBox(
+                fit: BoxFit.scaleDown,
+                alignment: Alignment.centerLeft,
+                child: Text(
+                  'One Line Labyrinth',
+                  style: TextStyle(fontSize: 24, fontWeight: FontWeight.w900),
+                ),
               ),
             ),
             IconButton(
@@ -490,6 +537,13 @@ class _Header extends StatelessWidget {
               onPressed: onHelp,
               tooltip: 'How to play',
               icon: const Icon(Icons.help_outline),
+            ),
+            IconButton(
+              onPressed: onToggleSound,
+              tooltip: soundMuted ? 'Sound off' : 'Sound on',
+              icon: Icon(
+                soundMuted ? Icons.volume_off_rounded : Icons.volume_up_rounded,
+              ),
             ),
           ],
         ),

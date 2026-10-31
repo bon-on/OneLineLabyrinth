@@ -5,6 +5,7 @@ status: accepted
 related_specs:
   - feature-one-line-labyrinth-crazygames
   - feature-one-line-labyrinth-gamepix
+  - feature-sound-effects
 ---
 
 # ADR: Build flag and platform adapter for CrazyGames
@@ -17,7 +18,7 @@ outbound links, and expects SDK gameplay events.
 ## Decision
 - `bool.fromEnvironment('CRAZYGAMES')` picks the platform. The game screen only
   depends on the `GamePlatform` interface (`gameplayStart`, `gameplayStop`,
-  `allowsResultRegistration`); a conditional import on `dart.library.js_interop`
+  `allowsResultRegistration`, `isAudioMuted`); a conditional import on `dart.library.js_interop`
   keeps the JS adapter out of mobile builds.
 - The SDK script and relative base href are injected into the build output by
   `tool/build_crazygames.sh`, not into `web/index.html`. The script also removes the

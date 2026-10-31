@@ -4,6 +4,7 @@ title: One Line Labyrinth CrazyGames web distribution contract
 status: active
 related_specs:
   - feature-one-line-labyrinth-crazygames
+  - feature-sound-effects
 evidence_files:
   - docs/crazygames.md
   - reports/one-line-labyrinth-crazygames-verification.md
