@@ -5,6 +5,7 @@ status: active
 related_specs:
   - feature-one-line-labyrinth-crazygames
   - feature-sound-effects
+  - feature-retention-polish
 evidence_files:
   - docs/crazygames.md
   - reports/one-line-labyrinth-crazygames-verification.md

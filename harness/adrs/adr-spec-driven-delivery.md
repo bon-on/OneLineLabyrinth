@@ -6,6 +6,7 @@ related_specs:
   - feature-harness-apply
   - feature-grid-puzzle-generation
   - feature-how-to-play-tutorial
+  - feature-retention-polish
 ---
 
 # ADR: Make feature specs and ADRs the top AI source of truth

@@ -6,6 +6,7 @@ related_specs:
   - feature-one-line-labyrinth-crazygames
   - feature-one-line-labyrinth-gamepix
   - feature-sound-effects
+  - feature-retention-polish
 ---
 
 # ADR: Build flag and platform adapter for CrazyGames

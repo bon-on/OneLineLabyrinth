@@ -5,6 +5,7 @@ status: active
 related_specs:
   - feature-grid-puzzle-generation
   - feature-how-to-play-tutorial
+  - feature-retention-polish
 evidence_files:
   - reports/grid-puzzle-generation-audit.md
 ---
