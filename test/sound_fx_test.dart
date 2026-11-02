@@ -1,5 +1,6 @@
 import 'dart:io';
 import 'dart:math' as math;
+import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -20,6 +21,29 @@ class _RecordingPlayer implements SoundPlayer {
 
   @override
   void dispose() => disposed = true;
+}
+
+class _RecordingMusic implements MusicPlayer {
+  final List<String> calls = <String>[];
+  bool accept = true;
+
+  @override
+  Future<bool> start(String asset, double volume) async {
+    calls.add('start');
+    return accept;
+  }
+
+  @override
+  void pause() => calls.add('pause');
+
+  @override
+  Future<bool> resume() async {
+    calls.add('resume');
+    return accept;
+  }
+
+  @override
+  void stop() => calls.add('stop');
 }
 
 class _MutedPlatform extends NoopGamePlatform {
@@ -172,6 +196,116 @@ void main() {
       fx.play(Sfx.step);
       await fx.setUserMuted(true);
       expect(player.played, isEmpty);
+    });
+  });
+
+  group('music', () {
+    test('native music starts at once and follows mute and visibility', () async {
+      final music = _RecordingMusic();
+      final platform = _MutedPlatform()..muted = false;
+      final fx = SoundFx(
+        player: _RecordingPlayer(),
+        music: music,
+        platform: platform,
+        isWeb: false,
+      );
+      fx.startMusic();
+      await Future<void>.delayed(Duration.zero);
+      expect(music.calls, ['start']);
+      expect(fx.isMusicPlaying, isTrue);
+
+      await fx.setUserMuted(true);
+      expect(music.calls.last, 'pause');
+      expect(fx.isMusicPlaying, isFalse);
+      await fx.setUserMuted(false);
+      await Future<void>.delayed(Duration.zero);
+      expect(music.calls.last, 'start');
+
+      platform.muted = true;
+      fx.refreshMute();
+      expect(music.calls.last, 'pause');
+      platform.muted = false;
+      fx.refreshMute();
+      await Future<void>.delayed(Duration.zero);
+      expect(fx.isMusicPlaying, isTrue);
+
+      fx.setAppVisible(false);
+      expect(fx.isMusicPlaying, isFalse);
+      fx.setAppVisible(true);
+      await Future<void>.delayed(Duration.zero);
+      expect(fx.isMusicPlaying, isTrue);
+
+      fx.stopMusic();
+      expect(music.calls.last, 'stop');
+      fx.dispose();
+    });
+
+    test('web music waits for the first user input and resumes', () async {
+      final music = _RecordingMusic();
+      final fx = SoundFx(
+        player: _RecordingPlayer(),
+        music: music,
+        isWeb: true,
+      );
+      fx.startMusic();
+      await Future<void>.delayed(Duration.zero);
+      expect(music.calls, isEmpty);
+
+      fx.onUserInput();
+      await Future<void>.delayed(Duration.zero);
+      expect(music.calls, ['start']);
+      fx.setAppVisible(false);
+      fx.setAppVisible(true);
+      await Future<void>.delayed(Duration.zero);
+      expect(music.calls, ['start', 'pause', 'resume']);
+      fx.dispose();
+      expect(music.calls.last, 'stop');
+    });
+
+    test('a refused start is retried on the next input', () async {
+      final music = _RecordingMusic()..accept = false;
+      final fx = SoundFx(
+        player: _RecordingPlayer(),
+        music: music,
+        isWeb: true,
+      );
+      fx.startMusic();
+      fx.onUserInput();
+      await Future<void>.delayed(Duration.zero);
+      expect(fx.isMusicPlaying, isFalse);
+      music.accept = true;
+      fx.onUserInput();
+      await Future<void>.delayed(Duration.zero);
+      expect(fx.isMusicPlaying, isTrue);
+      expect(music.calls, ['start', 'start']);
+      fx.dispose();
+    });
+
+    test('a stored mute keeps the music silent', () async {
+      SharedPreferences.setMockInitialValues({SoundFx.mutedKey: true});
+      final music = _RecordingMusic();
+      final fx = SoundFx(
+        player: _RecordingPlayer(),
+        music: music,
+        isWeb: false,
+      );
+      await fx.load();
+      fx.startMusic();
+      await Future<void>.delayed(Duration.zero);
+      expect(music.calls, isEmpty);
+      fx.dispose();
+    });
+
+    test('the loop is a small 16 kHz mono file bundled by pubspec', () {
+      final file = File(SoundFx.musicAsset);
+      expect(file.existsSync(), isTrue);
+      expect(file.lengthSync(), lessThanOrEqualTo(1024 * 1024));
+      final bytes = file.readAsBytesSync();
+      final header = ByteData.sublistView(bytes, 0, 44);
+      expect(header.getUint16(22, Endian.little), 1);
+      expect(header.getUint32(24, Endian.little), 16000);
+      expect(header.getUint16(34, Endian.little), 16);
+      expect(File('pubspec.yaml').readAsStringSync(), contains('- assets/music/'));
     });
   });
 

@@ -63,6 +63,7 @@ flutter:
   # (portals require all resources to be local). License: assets/fonts/Roboto_LICENSE.txt
   assets:
     - assets/audio/
+    - assets/music/
     - assets/fonts/Roboto_LICENSE.txt
 
   fonts:

@@ -9,6 +9,7 @@ import io.flutter.plugin.common.MethodChannel
 
 class MainActivity : FlutterActivity() {
     private val players = mutableSetOf<MediaPlayer>()
+    private var musicPlayer: MediaPlayer? = null
 
     override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
         super.configureFlutterEngine(flutterEngine)
@@ -22,6 +23,16 @@ class MainActivity : FlutterActivity() {
                     val asset = call.argument<String>("asset")
                     val volume = call.argument<Double>("volume")?.toFloat() ?: 0.7f
                     if (asset != null) playSound(asset, volume)
+                    result.success(null)
+                }
+                "startLoop" -> {
+                    val asset = call.argument<String>("asset")
+                    val volume = call.argument<Double>("volume")?.toFloat() ?: 0.4f
+                    if (asset != null) startLoop(asset, volume)
+                    result.success(null)
+                }
+                "stopLoop" -> {
+                    stopLoop()
                     result.success(null)
                 }
                 "disposeAudio" -> {
@@ -75,7 +86,47 @@ class MainActivity : FlutterActivity() {
         }
     }
 
+    private fun startLoop(asset: String, volume: Float) {
+        stopLoop()
+        runCatching {
+            val key = FlutterInjector.instance().flutterLoader().getLookupKeyForAsset(asset)
+            val player = MediaPlayer()
+            try {
+                player.setAudioAttributes(
+                    AudioAttributes.Builder()
+                        .setContentType(AudioAttributes.CONTENT_TYPE_MUSIC)
+                        .setUsage(AudioAttributes.USAGE_GAME)
+                        .build(),
+                )
+                assets.openFd(key).use { descriptor ->
+                    player.setDataSource(
+                        descriptor.fileDescriptor,
+                        descriptor.startOffset,
+                        descriptor.length,
+                    )
+                }
+                player.prepare()
+                player.isLooping = true
+                player.setVolume(volume, volume)
+                musicPlayer = player
+                player.start()
+            } catch (error: Throwable) {
+                musicPlayer = null
+                player.release()
+                throw error
+            }
+        }
+    }
+
+    private fun stopLoop() {
+        val player = musicPlayer ?: return
+        musicPlayer = null
+        runCatching { player.stop() }
+        player.release()
+    }
+
     private fun disposeAudio() {
+        stopLoop()
         players.toList().forEach { it.release() }
         players.clear()
     }

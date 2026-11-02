@@ -113,4 +113,28 @@ void main() {
     sdk.muteAudio = false;
     expect(platform.isAudioMuted, isFalse);
   });
+
+  test('settings changes notify the mute listener', () async {
+    final sdk = _FakeSdk();
+    JSFunction? registered;
+    (globalContext.getProperty<JSObject>('CrazyGames'.toJS))
+        .getProperty<JSObject>('SDK'.toJS)
+        .getProperty<JSObject>('game'.toJS)
+        .setProperty(
+          'addSettingsChangeListener'.toJS,
+          ((JSFunction listener) => registered = listener).toJS,
+        );
+    final platform = CrazyGamesPlatform();
+    await platform.initialize();
+    var notified = 0;
+    platform.setAudioMuteListener(() => notified++);
+    expect(registered, isNotNull);
+
+    sdk.muteAudio = true;
+    registered!.callAsFunction(null, sdk.settings);
+    expect(notified, 1);
+    expect(platform.isAudioMuted, isTrue);
+    platform.gameplayStart();
+    expect(sdk.calls, <String>['gameplayStart']);
+  });
 }
