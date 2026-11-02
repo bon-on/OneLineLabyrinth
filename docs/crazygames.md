@@ -48,7 +48,7 @@ On `localhost` the SDK environment is `local`; the console logs the SDK calls.
 
 Leaderboard registration is not offered in this build, and no ads are used.
 
-Sound: effects are muted while `SDK.game.settings.muteAudio` is true (read on every sound), in addition to the player's own sound toggle.
+Sound: effects and the music loop are muted while `SDK.game.settings.muteAudio` is true (read on every sound, re-checked on every input and via `addSettingsChangeListener`), in addition to the player's own sound toggle. Music starts after the first input and pauses while the tab is hidden.
 
 ## Upload notes
 
