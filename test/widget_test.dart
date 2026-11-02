@@ -192,7 +192,10 @@ void main() {
     tester.view.devicePixelRatio = 1;
     addTearDown(tester.view.reset);
     await tester.pumpWidget(OneLineLabyrinthApp(random: math.Random(_seed)));
-    await tester.pumpAndSettle();
+    // The sky animates forever, so pump a few frames instead of settling.
+    for (var i = 0; i < 5; i++) {
+      await tester.pump(const Duration(milliseconds: 50));
+    }
 
     expect(find.text('7'), findsOneWidget);
   });

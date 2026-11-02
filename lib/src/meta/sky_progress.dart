@@ -86,10 +86,11 @@ class AlbumShape {
   ];
 
   /// Decodes a stored shape back to normalized points.
-  static List<math.Point<double>> decode(List<int> flat) => <math.Point<double>>[
-    for (var i = 0; i + 1 < flat.length; i += 2)
-      math.Point<double>(flat[i] / scale, flat[i + 1] / scale),
-  ];
+  static List<math.Point<double>> decode(List<int> flat) =>
+      <math.Point<double>>[
+        for (var i = 0; i + 1 < flat.length; i += 2)
+          math.Point<double>(flat[i] / scale, flat[i + 1] / scale),
+      ];
 }
 
 /// Saved meta progress: XP, chosen sky, best level and stars per level, and
@@ -269,8 +270,7 @@ class SkyProgress {
     'levelStars': <String, Map<String, int>>{
       for (final entry in levelStars.entries)
         entry.key.name: <String, int>{
-          for (final level in entry.value.entries)
-            '${level.key}': level.value,
+          for (final level in entry.value.entries) '${level.key}': level.value,
         },
     },
     'album': album,

@@ -200,53 +200,52 @@ void main() {
   });
 
   group('music', () {
-    test('native music starts at once and follows mute and visibility', () async {
-      final music = _RecordingMusic();
-      final platform = _MutedPlatform()..muted = false;
-      final fx = SoundFx(
-        player: _RecordingPlayer(),
-        music: music,
-        platform: platform,
-        isWeb: false,
-      );
-      fx.startMusic();
-      await Future<void>.delayed(Duration.zero);
-      expect(music.calls, ['start']);
-      expect(fx.isMusicPlaying, isTrue);
+    test(
+      'native music starts at once and follows mute and visibility',
+      () async {
+        final music = _RecordingMusic();
+        final platform = _MutedPlatform()..muted = false;
+        final fx = SoundFx(
+          player: _RecordingPlayer(),
+          music: music,
+          platform: platform,
+          isWeb: false,
+        );
+        fx.startMusic();
+        await Future<void>.delayed(Duration.zero);
+        expect(music.calls, ['start']);
+        expect(fx.isMusicPlaying, isTrue);
 
-      await fx.setUserMuted(true);
-      expect(music.calls.last, 'pause');
-      expect(fx.isMusicPlaying, isFalse);
-      await fx.setUserMuted(false);
-      await Future<void>.delayed(Duration.zero);
-      expect(music.calls.last, 'start');
+        await fx.setUserMuted(true);
+        expect(music.calls.last, 'pause');
+        expect(fx.isMusicPlaying, isFalse);
+        await fx.setUserMuted(false);
+        await Future<void>.delayed(Duration.zero);
+        expect(music.calls.last, 'start');
 
-      platform.muted = true;
-      fx.refreshMute();
-      expect(music.calls.last, 'pause');
-      platform.muted = false;
-      fx.refreshMute();
-      await Future<void>.delayed(Duration.zero);
-      expect(fx.isMusicPlaying, isTrue);
+        platform.muted = true;
+        fx.refreshMute();
+        expect(music.calls.last, 'pause');
+        platform.muted = false;
+        fx.refreshMute();
+        await Future<void>.delayed(Duration.zero);
+        expect(fx.isMusicPlaying, isTrue);
 
-      fx.setAppVisible(false);
-      expect(fx.isMusicPlaying, isFalse);
-      fx.setAppVisible(true);
-      await Future<void>.delayed(Duration.zero);
-      expect(fx.isMusicPlaying, isTrue);
+        fx.setAppVisible(false);
+        expect(fx.isMusicPlaying, isFalse);
+        fx.setAppVisible(true);
+        await Future<void>.delayed(Duration.zero);
+        expect(fx.isMusicPlaying, isTrue);
 
-      fx.stopMusic();
-      expect(music.calls.last, 'stop');
-      fx.dispose();
-    });
+        fx.stopMusic();
+        expect(music.calls.last, 'stop');
+        fx.dispose();
+      },
+    );
 
     test('web music waits for the first user input and resumes', () async {
       final music = _RecordingMusic();
-      final fx = SoundFx(
-        player: _RecordingPlayer(),
-        music: music,
-        isWeb: true,
-      );
+      final fx = SoundFx(player: _RecordingPlayer(), music: music, isWeb: true);
       fx.startMusic();
       await Future<void>.delayed(Duration.zero);
       expect(music.calls, isEmpty);
@@ -264,11 +263,7 @@ void main() {
 
     test('a refused start is retried on the next input', () async {
       final music = _RecordingMusic()..accept = false;
-      final fx = SoundFx(
-        player: _RecordingPlayer(),
-        music: music,
-        isWeb: true,
-      );
+      final fx = SoundFx(player: _RecordingPlayer(), music: music, isWeb: true);
       fx.startMusic();
       fx.onUserInput();
       await Future<void>.delayed(Duration.zero);
@@ -305,7 +300,10 @@ void main() {
       expect(header.getUint16(22, Endian.little), 1);
       expect(header.getUint32(24, Endian.little), 16000);
       expect(header.getUint16(34, Endian.little), 16);
-      expect(File('pubspec.yaml').readAsStringSync(), contains('- assets/music/'));
+      expect(
+        File('pubspec.yaml').readAsStringSync(),
+        contains('- assets/music/'),
+      );
     });
   });
 
@@ -496,7 +494,10 @@ void main() {
       tester.view.devicePixelRatio = 1;
       addTearDown(tester.view.reset);
       await tester.pumpWidget(OneLineLabyrinthApp(random: math.Random(_seed)));
-      await tester.pumpAndSettle();
+      // The sky animates forever, so pump a few frames instead of settling.
+      for (var i = 0; i < 5; i++) {
+        await tester.pump(const Duration(milliseconds: 50));
+      }
       expect(find.byTooltip('Sound off'), findsOneWidget);
     });
 

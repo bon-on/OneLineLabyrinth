@@ -42,9 +42,7 @@ class CrazyGamesPlatform extends GamePlatform {
     // Older or stubbed SDKs may lack the listener; muteAudio is still read
     // live on every sound and re-checked on every user input.
     try {
-      sdk.game.addSettingsChangeListener(
-        ((JSAny? _) => _notifyMute()).toJS,
-      );
+      sdk.game.addSettingsChangeListener(((JSAny? _) => _notifyMute()).toJS);
     } catch (error) {
       debugPrint('CrazyGames settings listener unavailable: $error');
     }

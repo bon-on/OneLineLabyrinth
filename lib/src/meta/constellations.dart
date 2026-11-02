@@ -29,13 +29,33 @@ class Constellations {
   ];
 
   static const List<String> _adjectives = <String>[
-    'Distant', 'Silent', 'Golden', 'Drifting', 'Ancient', 'Velvet',
-    'Wandering', 'Hidden', 'Bright', 'Frozen', 'Restless', 'Gentle',
+    'Distant',
+    'Silent',
+    'Golden',
+    'Drifting',
+    'Ancient',
+    'Velvet',
+    'Wandering',
+    'Hidden',
+    'Bright',
+    'Frozen',
+    'Restless',
+    'Gentle',
   ];
 
   static const List<String> _nouns = <String>[
-    'Heron', 'Lantern', 'Serpent', 'Harp', 'Comet', 'Crown',
-    'Mariner', 'Lynx', 'Spindle', 'Orchid', 'Anchor', 'Owl',
+    'Heron',
+    'Lantern',
+    'Serpent',
+    'Harp',
+    'Comet',
+    'Crown',
+    'Mariner',
+    'Lynx',
+    'Spindle',
+    'Orchid',
+    'Anchor',
+    'Owl',
   ];
 
   /// Whether ([difficulty], [level]) has an album slot.

@@ -167,7 +167,10 @@ void main() {
       expect(merged.bestLevel(PuzzleDifficulty.easy), 7);
       expect(merged.bestLevel(PuzzleDifficulty.normal), 9);
       expect(merged.bestLevel(PuzzleDifficulty.hard), 0);
-      expect(identical(merged.withLegacyBestLevels({'easy': 3}), merged), isTrue);
+      expect(
+        identical(merged.withLegacyBestLevels({'easy': 3}), merged),
+        isTrue,
+      );
     });
 
     test('JSON round trip', () {
