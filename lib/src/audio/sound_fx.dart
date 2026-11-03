@@ -294,7 +294,11 @@ class SoundFx extends ChangeNotifier {
           : _music.start(musicAsset, musicVolume);
       started.then<bool>((ok) => ok, onError: (Object _) => false).then((ok) {
         _musicStarting = false;
-        if (_disposed) return;
+        if (_disposed) {
+          // Disposed while starting: do not leave the loop running.
+          if (ok) _music.stop();
+          return;
+        }
         if (ok) {
           _musicStarted = true;
           _musicPlaying = true;

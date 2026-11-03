@@ -602,6 +602,12 @@ class _SkyOverlayState extends State<SkyOverlay> {
         keyboard.isAltPressed) {
       return KeyEventResult.ignored;
     }
+    final isActivate =
+        key == LogicalKeyboardKey.enter ||
+        key == LogicalKeyboardKey.numpadEnter ||
+        key == LogicalKeyboardKey.space;
+    // A Tab-focused tile or button inside the card activates itself.
+    if (isActivate && !_focus.hasPrimaryFocus) return KeyEventResult.ignored;
     if (event is KeyDownEvent &&
         (key == LogicalKeyboardKey.escape ||
             key == LogicalKeyboardKey.enter ||

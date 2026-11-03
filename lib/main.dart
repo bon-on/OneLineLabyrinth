@@ -172,6 +172,7 @@ class _OneLineLabyrinthScreenState extends State<OneLineLabyrinthScreen>
   double? _revealStart;
   int _starsChimed = 0;
   bool _levelUpPlayed = false;
+  bool _hintShown = false;
 
   final FocusNode _gameFocus = FocusNode(debugLabel: 'game');
   late final AppLifecycleListener _lifecycle;
@@ -240,6 +241,10 @@ class _OneLineLabyrinthScreenState extends State<OneLineLabyrinthScreen>
     final t = elapsed.inMicroseconds / 1e6;
     _time.value = t;
     _fx.prune(t);
+    // The hint status and button glow are widgets: rebuild once on expiry.
+    final hintShown = _fx.hintNode(t) != null;
+    if (_hintShown && !hintShown && mounted) setState(() {});
+    _hintShown = hintShown;
     if (!_complete) {
       _seconds.value = _stopwatch.elapsedMilliseconds ~/ 1000;
     }
@@ -598,7 +603,9 @@ class _OneLineLabyrinthScreenState extends State<OneLineLabyrinthScreen>
       return KeyEventResult.ignored;
     }
     final key = event.logicalKey;
+    // A Tab-focused button keeps Enter/Space for itself.
     if (_complete &&
+        _gameFocus.hasPrimaryFocus &&
         (key == LogicalKeyboardKey.enter ||
             key == LogicalKeyboardKey.numpadEnter ||
             key == LogicalKeyboardKey.space)) {
@@ -644,6 +651,8 @@ class _OneLineLabyrinthScreenState extends State<OneLineLabyrinthScreen>
       resizeToAvoidBottomInset: false,
       body: Listener(
         onPointerDown: (_) => _onAnyInput(),
+        // Mobile browsers grant audio on touch end, not touch start.
+        onPointerUp: (_) => _onAnyInput(),
         child: Focus(
           focusNode: _gameFocus,
           autofocus: true,
@@ -1265,8 +1274,8 @@ class _OneLineLabyrinthScreenState extends State<OneLineLabyrinthScreen>
                     ? Column(
                         children: [
                           Expanded(child: summary),
-                          const SizedBox(height: 8),
-                          _tools(p),
+                          // Short screens give the whole footer to the card.
+                          if (roomy) ...[const SizedBox(height: 8), _tools(p)],
                         ],
                       )
                     : Column(

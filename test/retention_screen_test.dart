@@ -339,7 +339,12 @@ void main() {
       expect(tester.takeException(), isNull);
       expect(find.text('Next Level'), findsOneWidget);
       expect(find.textContaining('Aurora unlocked'), findsOneWidget);
+      // The result buttons stay on screen and hittable.
+      final next = tester.getCenter(find.text('Next Level'));
+      expect((Offset.zero & size).contains(next), isTrue);
       for (final menu in ['Level map', 'Constellation album']) {
+        // Very short screens give the footer to the result card.
+        if (find.byTooltip(menu).evaluate().isEmpty) continue;
         await tester.tap(find.byTooltip(menu));
         await tester.pump();
         expect(tester.takeException(), isNull);
@@ -347,6 +352,51 @@ void main() {
         await tester.pump();
       }
       expect(tester.takeException(), isNull);
+      await tester.tap(find.text('Next Level'));
+      await tester.pump();
+      expect(find.text('Next Level'), findsNothing);
     });
   }
+
+  testWidgets('keyboard picks a level in the map and hints expire', (
+    tester,
+  ) async {
+    await _pump(
+      tester,
+      size: const Size(1280, 720),
+      progress: MemorySkyProgressStore(
+        SkyProgress.fromJson({
+          'bestLevels': {'easy': 3},
+        }),
+      ),
+    );
+    await tester.sendKeyEvent(LogicalKeyboardKey.keyH);
+    await tester.pump();
+    expect(
+      find.text('Follow the golden guide to the next star.'),
+      findsOneWidget,
+    );
+    await _frames(tester, 60);
+    expect(
+      find.text('Follow the golden guide to the next star.'),
+      findsNothing,
+    );
+
+    await tester.sendKeyEvent(LogicalKeyboardKey.keyM);
+    await tester.pump();
+    expect(find.text('Level map'), findsOneWidget);
+    // Tab past the close button and the difficulty buttons to level 1, 2.
+    final tile = find.bySemanticsLabel(RegExp(r'^Level 2, '));
+    Focus.of(
+      tester.element(
+        find.descendant(of: tile, matching: find.byType(Text)).first,
+      ),
+    ).requestFocus();
+    await tester.pump();
+    await tester.sendKeyEvent(LogicalKeyboardKey.enter);
+    await tester.pump();
+    expect(find.text('Level map'), findsNothing);
+    final level2 = _puzzle(PuzzleDifficulty.easy, 2);
+    expect(find.text('1/${level2.nodeCount}'), findsOneWidget);
+  });
 }
