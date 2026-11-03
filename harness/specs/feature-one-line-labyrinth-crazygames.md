@@ -44,8 +44,8 @@ and no outbound links or external result uploads.
   removed, file count <= 1500, size <= 50MB, with self-checks.
 - No ad network is used in any build.
 
-Out of scope: gameplay or puzzle changes, ads, CrazyGames Data/User modules,
-portal upload.
+Out of scope: gameplay or puzzle changes, ads, portal upload. (CrazyGames Data/User
+modules were introduced later only for progress saving, see `feature-crazygames-cloud-save`.)
 
 ## Acceptance Criteria
 - `flutter analyze` and `flutter test` pass; `flutter test --platform chrome test/web` passes.
