@@ -59,7 +59,8 @@ stays in browser localStorage only.
 - At startup the local mirror wins when it belongs to the same player and its revision is not older than the account copy;
   otherwise the account copy wins. Another player's mirror is never used. Progress from before this feature is adopted only
   when no account copy exists.
-- A login or logout (`user.addAuthListener`) reloads the page. If the initial user cannot be read, cloud save stays off.
+- While cloud save is active, the page reloads (`user.addAuthListener`) only when the player changes
+  to a different player or logs out. If the initial user cannot be read, cloud save stays off.
 
 Sound: effects and the music loop are muted while `SDK.game.settings.muteAudio` is true (read on every sound, re-checked on every input and via `addSettingsChangeListener`), in addition to the player's own sound toggle. Music starts after the first input and pauses while the tab is hidden.
 
