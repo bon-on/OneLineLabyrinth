@@ -42,7 +42,10 @@ after the player has already had to learn the full game.
 - Existing level numbers, unlocked levels, album shapes, best stars, and
   XP use their existing keys and merge rules. New clears use the same
   result flow. Replay, restart, and level map select the same authored board.
-- Leave the existing Pages, native, and GamePix flows intact.
+- The flow is also selected by `--dart-define=STARTER_PUZZLES=true`. The
+  GitHub Pages build sets it (still no SDK, hub navigation kept); native and
+  GamePix builds leave it unset and keep the tutorial modal and generated
+  Easy 1.
 
 ## Acceptance Criteria
 

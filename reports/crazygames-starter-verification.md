@@ -26,3 +26,18 @@ are in `build/starter-screenshots/`. The first clear was a functional smoke
 check after the browser had been left open. First-time human completion
 timing, native device testing and authenticated CrazyGames portal QA remain
 unmeasured. The November 6 submission packet reflects the previous release.
+
+## Addendum: Pages opt-in (2026-11-11)
+
+`STARTER_PUZZLES=true` now selects the same starter flow. The Pages workflow,
+README and Pages doc pass it. Verified: `flutter analyze --no-pub` clean,
+`flutter test --no-pub` 137 passed, Pages release build has no SDK script
+(`crazygames-sdk` count 0), and `tool/build_crazygames.sh` rebuilt the ZIP
+(46 files, `unzip -tq` OK, SHA-256
+`91ee56f21ae27748b3fe765e5a086d93a17709729eb14cbc27af37deffe6afe5`).
+The Chrome SDK tests, the Pages-flow widget test and a portal upload were not
+rerun for this addendum.
+
+Generator ramp observed (stars / decoy edges, levels 1-10): Easy 16/4 16/4
+20/5 20/5 25/7 25/7...; authored Easy 5 is already 16 stars, so Easy 6 jumps
+to 25 stars. Consider offsetting generated levels after the authored set.

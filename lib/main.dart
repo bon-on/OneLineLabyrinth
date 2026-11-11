@@ -42,7 +42,9 @@ class OneLineLabyrinthApp extends StatelessWidget {
     this.stopwatch,
     this.platform = const NoopGamePlatform(),
     this.soundFx,
-    this.useStarterPuzzles = const bool.fromEnvironment('CRAZYGAMES'),
+    this.useStarterPuzzles =
+        const bool.fromEnvironment('CRAZYGAMES') ||
+        const bool.fromEnvironment('STARTER_PUZZLES'),
   });
 
   /// Injectable randomness for deterministic tests.
@@ -104,7 +106,9 @@ class OneLineLabyrinthScreen extends StatefulWidget {
     this.stopwatch,
     this.platform = const NoopGamePlatform(),
     this.soundFx,
-    this.useStarterPuzzles = const bool.fromEnvironment('CRAZYGAMES'),
+    this.useStarterPuzzles =
+        const bool.fromEnvironment('CRAZYGAMES') ||
+        const bool.fromEnvironment('STARTER_PUZZLES'),
   });
 
   final math.Random? random;

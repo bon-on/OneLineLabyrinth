@@ -54,7 +54,7 @@ flutter test
 ## Local Web Build
 
 ```sh
-flutter build web --release --base-href /OneLineLabyrinth/
+flutter build web --release --base-href /OneLineLabyrinth/ --dart-define=STARTER_PUZZLES=true
 ```
 
 GitHub Pages deploys from `.github/workflows/deploy-pages.yml`.
