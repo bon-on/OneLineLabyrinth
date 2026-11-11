@@ -3,6 +3,7 @@ id: adr-spec-driven-delivery
 title: Make feature specs and ADRs the top AI source of truth
 status: accepted
 related_specs:
+  - feature-crazygames-starter-puzzles
   - feature-harness-apply
   - feature-grid-puzzle-generation
   - feature-how-to-play-tutorial

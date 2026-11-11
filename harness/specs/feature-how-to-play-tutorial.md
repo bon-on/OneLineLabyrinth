@@ -61,3 +61,9 @@ tutorial that can be skipped.
 - flutter test
 - flutter build web --release --base-href /OneLineLabyrinth/
 - `<harness-lab>` audit (`node <harness-lab>/dist/index.js audit . --format md`)
+
+## CrazyGames variation
+
+The CrazyGames build replaces the automatic modal with
+`feature-crazygames-starter-puzzles`. The manual help overlay retains its
+existing interaction and pause behavior.

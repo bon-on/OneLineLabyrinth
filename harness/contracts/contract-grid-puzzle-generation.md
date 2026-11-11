@@ -3,6 +3,7 @@ id: contract-grid-puzzle-generation
 title: Deliver grid puzzle generation and responsive board
 status: active
 related_specs:
+  - feature-crazygames-starter-puzzles
   - feature-grid-puzzle-generation
   - feature-how-to-play-tutorial
   - feature-retention-polish

@@ -48,6 +48,7 @@ Out of scope: gameplay or puzzle changes, ads, portal upload. (CrazyGames Data/U
 modules were introduced later only for progress saving, see `feature-crazygames-cloud-save`.)
 
 ## Acceptance Criteria
+- Losing app/tab focus stops SDK gameplay once and pauses active timers/simulation; resume starts only when no tutorial/menu/result is open. Lifecycle transitions never duplicate events.
 - `flutter analyze` and `flutter test` pass; `flutter test --platform chrome test/web` passes.
 - Fake-platform widget tests verify call order including the tutorial overlay,
   level completion and next level, and that the leaderboard offer follows the platform.
@@ -67,3 +68,14 @@ modules were introduced later only for progress saving, see `feature-crazygames-
 - flutter build web --release --base-href /OneLineLabyrinth/
 - `<harness-lab>` audit (`node <harness-lab>/dist/index.js audit . --format md`)
 - reports/one-line-labyrinth-crazygames-verification.md
+
+## Launch hardening — 2026-11-06
+
+The screen observes app lifecycle so hidden or inactive tabs pause play and sound, then resume only an active run. Widget regression checks cover background/resume and overlays.
+
+## Playable onboarding
+
+`feature-crazygames-starter-puzzles` supersedes the stored tutorial flag and
+automatic overlay requirements for the CrazyGames build. The first active
+board starts gameplay. Manual help still stops it and closing help resumes
+an unsolved board.

@@ -3,6 +3,7 @@ id: contract-one-line-labyrinth-crazygames
 title: One Line Labyrinth CrazyGames web distribution contract
 status: active
 related_specs:
+  - feature-crazygames-starter-puzzles
   - feature-one-line-labyrinth-crazygames
   - feature-sound-effects
   - feature-retention-polish

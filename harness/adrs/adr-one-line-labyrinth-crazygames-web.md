@@ -3,6 +3,7 @@ id: adr-one-line-labyrinth-crazygames-web
 title: Use a build flag and platform adapter for the CrazyGames distribution
 status: accepted
 related_specs:
+  - feature-crazygames-starter-puzzles
   - feature-one-line-labyrinth-crazygames
   - feature-one-line-labyrinth-gamepix
   - feature-sound-effects
@@ -35,3 +36,10 @@ outbound links, and expects SDK gameplay events.
 
 ## GamePix addendum
 GamePix builds (`--dart-define=GAMEPIX=true`, see `feature-one-line-labyrinth-gamepix`) reuse the no-op platform with `allowsResultRegistration == false` instead of an adapter: GamePix forbids third-party SDKs and external network use. The CrazyGames adapter is selected only by `CRAZYGAMES=true`.
+
+## Playable onboarding addendum
+
+The same build flag selects the authored Easy starter sequence and skips
+the automatic help modal. Gameplay starts when the first board is active.
+Opening help manually still pauses the session, and progress uses the
+existing persistence and level numbering.

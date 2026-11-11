@@ -15,6 +15,7 @@ import 'src/art/sky_theme.dart';
 import 'src/audio/sound_fx.dart';
 import 'src/game/board_fx.dart';
 import 'src/game/board_painter.dart';
+import 'src/game/starter_puzzles.dart';
 import 'src/meta/constellations.dart';
 import 'src/meta/level_stars.dart';
 import 'src/meta/sky_progress.dart';
@@ -41,6 +42,7 @@ class OneLineLabyrinthApp extends StatelessWidget {
     this.stopwatch,
     this.platform = const NoopGamePlatform(),
     this.soundFx,
+    this.useStarterPuzzles = const bool.fromEnvironment('CRAZYGAMES'),
   });
 
   /// Injectable randomness for deterministic tests.
@@ -61,6 +63,7 @@ class OneLineLabyrinthApp extends StatelessWidget {
 
   /// Injectable sound effects; tests pass a recording one.
   final SoundFx? soundFx;
+  final bool useStarterPuzzles;
 
   @override
   Widget build(BuildContext context) {
@@ -85,6 +88,7 @@ class OneLineLabyrinthApp extends StatelessWidget {
         stopwatch: stopwatch,
         platform: platform,
         soundFx: soundFx,
+        useStarterPuzzles: useStarterPuzzles,
       ),
     );
   }
@@ -100,6 +104,7 @@ class OneLineLabyrinthScreen extends StatefulWidget {
     this.stopwatch,
     this.platform = const NoopGamePlatform(),
     this.soundFx,
+    this.useStarterPuzzles = const bool.fromEnvironment('CRAZYGAMES'),
   });
 
   final math.Random? random;
@@ -113,6 +118,7 @@ class OneLineLabyrinthScreen extends StatefulWidget {
 
   /// Sound effects and mute switch; defaults to the real player.
   final SoundFx? soundFx;
+  final bool useStarterPuzzles;
 
   @override
   State<OneLineLabyrinthScreen> createState() => _OneLineLabyrinthScreenState();
@@ -130,6 +136,7 @@ class _OneLineLabyrinthScreenState extends State<OneLineLabyrinthScreen>
       widget.progressStore ?? const SkyProgressStore();
   PuzzleDifficulty _difficulty = PuzzleDifficulty.easy;
   late GridPuzzle _puzzle;
+  bool _isStarterPuzzle = false;
   late List<int> _path;
   int _level = 1;
   int _attempts = 0;
@@ -145,7 +152,11 @@ class _OneLineLabyrinthScreenState extends State<OneLineLabyrinthScreen>
   bool _tutorialOpen = false;
   // True until the stored tutorial flag has been read, so gameplayStart is
   // not reported before we know whether the tutorial is about to open.
-  bool _tutorialLoading = true;
+  late bool _tutorialLoading = !widget.useStarterPuzzles;
+  bool _starterBoardReady = false;
+  bool _appActive =
+      WidgetsBinding.instance.lifecycleState == null ||
+      WidgetsBinding.instance.lifecycleState == AppLifecycleState.resumed;
   // Whether the platform currently believes gameplay is running.
   bool _gameplayActive = false;
   _Menu _menu = _Menu.none;
@@ -180,12 +191,28 @@ class _OneLineLabyrinthScreenState extends State<OneLineLabyrinthScreen>
   bool get _complete =>
       _path.length == _puzzle.nodeCount && _path.last == _puzzle.finish;
 
+  bool get _reachedRingEarly =>
+      _isStarterPuzzle &&
+      _path.last == _puzzle.finish &&
+      _path.length < _puzzle.nodeCount;
+
   bool get _deadEnd => !_complete && _candidateNodes().isEmpty;
+
+  int? get _guideTarget {
+    if (!_isStarterPuzzle) return null;
+    if (_deadEnd && _path.length > 1) return _path[_path.length - 2];
+    if (_level == 1 && _path.length == 1) return _puzzle.solution[1];
+    return null;
+  }
 
   SkyPalette get _palette => _progress.selectedTheme.palette;
 
   bool get _inputBlocked =>
-      _tutorialLoading || _tutorialOpen || _menu != _Menu.none;
+      !_appActive ||
+      (widget.useStarterPuzzles && !_starterBoardReady) ||
+      _tutorialLoading ||
+      _tutorialOpen ||
+      _menu != _Menu.none;
 
   @override
   void initState() {
@@ -200,21 +227,38 @@ class _OneLineLabyrinthScreenState extends State<OneLineLabyrinthScreen>
       _sound.startMusic();
     }
     widget.platform.setAudioMuteListener(_sound.refreshMute);
-    _lifecycle = AppLifecycleListener(
-      onStateChange: (state) => _sound.setAppVisible(
-        state == AppLifecycleState.resumed ||
-            state == AppLifecycleState.inactive,
-      ),
-    );
+    _lifecycle = AppLifecycleListener(onStateChange: _onAppLifecycleChanged);
     HardwareKeyboard.instance.addHandler(_onHardwareKey);
     _ticker = createTicker(_onTick)..start();
     _newPuzzle();
     _loadProgress();
-    _maybeShowTutorial();
+    if (widget.useStarterPuzzles) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) return;
+        setState(() => _starterBoardReady = true);
+        if (!_inputBlocked && !_complete) _stopwatch.start();
+        _syncGameplay();
+      });
+    } else {
+      _maybeShowTutorial();
+    }
   }
 
   void _onSoundChanged() {
     if (mounted) setState(() {});
+  }
+
+  void _onAppLifecycleChanged(AppLifecycleState state) {
+    final active = state == AppLifecycleState.resumed;
+    if (_appActive == active) return;
+    setState(() => _appActive = active);
+    _sound.setAppVisible(_appActive);
+    if (!_appActive) {
+      _stopwatch.stop();
+    } else if (!_inputBlocked && !_complete) {
+      _stopwatch.start();
+    }
+    _syncGameplay();
   }
 
   @override
@@ -290,11 +334,7 @@ class _OneLineLabyrinthScreenState extends State<OneLineLabyrinthScreen>
   /// Reports gameplay start/stop to the platform exactly on transitions:
   /// playing means no tutorial or menu and an unsolved puzzle.
   void _syncGameplay() {
-    final wantActive =
-        !_tutorialLoading &&
-        !_tutorialOpen &&
-        _menu == _Menu.none &&
-        !_complete;
+    final wantActive = !_inputBlocked && !_complete;
     if (wantActive == _gameplayActive) return;
     _gameplayActive = wantActive;
     if (wantActive) {
@@ -314,8 +354,8 @@ class _OneLineLabyrinthScreenState extends State<OneLineLabyrinthScreen>
 
   void _closeTutorial() {
     if (!_tutorialOpen) return;
-    _tutorialStore.markSeen();
-    if (!_complete && _menu == _Menu.none) _stopwatch.start();
+    if (!widget.useStarterPuzzles) _tutorialStore.markSeen();
+    if (_appActive && !_complete && _menu == _Menu.none) _stopwatch.start();
     setState(() => _tutorialOpen = false);
     _syncGameplay();
     _gameFocus.requestFocus();
@@ -330,7 +370,7 @@ class _OneLineLabyrinthScreenState extends State<OneLineLabyrinthScreen>
 
   void _closeMenu() {
     if (_menu == _Menu.none) return;
-    if (!_complete && !_tutorialOpen) _stopwatch.start();
+    if (_appActive && !_complete && !_tutorialOpen) _stopwatch.start();
     setState(() => _menu = _Menu.none);
     _syncGameplay();
     _gameFocus.requestFocus();
@@ -384,7 +424,12 @@ class _OneLineLabyrinthScreenState extends State<OneLineLabyrinthScreen>
   }
 
   void _newPuzzle() {
-    _puzzle = _generator.generate(_difficulty, _level);
+    final starter =
+        widget.useStarterPuzzles && _difficulty == PuzzleDifficulty.easy
+        ? starterPuzzleFor(_level)
+        : null;
+    _isStarterPuzzle = starter != null;
+    _puzzle = starter ?? _generator.generate(_difficulty, _level);
     _path = [_puzzle.start];
     _attempts = 0;
     _backtracks = 0;
@@ -399,9 +444,14 @@ class _OneLineLabyrinthScreenState extends State<OneLineLabyrinthScreen>
       ..clear()
       ..visit(_puzzle.start, _time.value);
     _stopwatch
-      ..reset()
-      ..start();
-    if (_tutorialOpen || _menu != _Menu.none) _stopwatch.stop();
+      ..stop()
+      ..reset();
+    if (_appActive &&
+        (!widget.useStarterPuzzles || _starterBoardReady) &&
+        !_tutorialOpen &&
+        _menu == _Menu.none) {
+      _stopwatch.start();
+    }
     setState(() {});
     _syncGameplay();
   }
@@ -422,7 +472,7 @@ class _OneLineLabyrinthScreenState extends State<OneLineLabyrinthScreen>
   }
 
   void _stepTo(int index) {
-    if (_complete || index == _path.last) return;
+    if (_inputBlocked || _complete || index == _path.last) return;
 
     if (_path.length >= 2 && index == _path[_path.length - 2]) {
       _sound.play(Sfx.undo);
@@ -432,7 +482,8 @@ class _OneLineLabyrinthScreenState extends State<OneLineLabyrinthScreen>
       return;
     }
 
-    if (_path.contains(index) ||
+    if (_reachedRingEarly ||
+        _path.contains(index) ||
         !_puzzle.neighbors(_path.last).contains(index)) {
       // Drags skim past other knots on purpose; only a tap is an error.
       if (!_dragging) {
@@ -543,7 +594,7 @@ class _OneLineLabyrinthScreenState extends State<OneLineLabyrinthScreen>
   }
 
   Set<int> _candidateNodes() {
-    if (_complete) return const {};
+    if (_complete || _reachedRingEarly) return const {};
     final visited = _path.toSet();
     return _puzzle
         .neighbors(_path.last)
@@ -631,6 +682,12 @@ class _OneLineLabyrinthScreenState extends State<OneLineLabyrinthScreen>
   String get _status {
     if (_complete) {
       return 'The constellation is complete! Next level grows the sky.';
+    }
+    if (_isStarterPuzzle && _deadEnd && _path.length > 1) {
+      return 'Go back to the highlighted star.';
+    }
+    if (_isStarterPuzzle && _level == 1 && _path.length == 1) {
+      return 'Tap or drag to the glowing star.';
     }
     if (_path.length == _puzzle.nodeCount) {
       return 'Every star is lit, but the line must end on the ring.';
@@ -848,8 +905,8 @@ class _OneLineLabyrinthScreenState extends State<OneLineLabyrinthScreen>
         ),
         SkyIconButton(
           palette: p,
-          icon: Icons.shuffle_rounded,
-          tooltip: 'New puzzle',
+          icon: _isStarterPuzzle ? Icons.restart_alt : Icons.shuffle_rounded,
+          tooltip: _isStarterPuzzle ? 'Restart puzzle' : 'New puzzle',
           onPressed: _newPuzzle,
         ),
         SkyIconButton(
@@ -1051,6 +1108,7 @@ class _OneLineLabyrinthScreenState extends State<OneLineLabyrinthScreen>
                       time: _time,
                       drag: _drag,
                       deadEnd: _deadEnd,
+                      guideTarget: _guideTarget,
                       complete: _complete,
                       name: _outcome?.name,
                     ),

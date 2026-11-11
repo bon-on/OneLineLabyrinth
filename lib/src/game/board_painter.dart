@@ -27,6 +27,7 @@ class BoardPainter extends CustomPainter {
     required this.deadEnd,
     required this.complete,
     this.name,
+    this.guideTarget,
   }) : super(repaint: Listenable.merge(<Listenable>[time, drag]));
 
   final GridPuzzle puzzle;
@@ -40,6 +41,9 @@ class BoardPainter extends CustomPainter {
   final ValueListenable<Offset?> drag;
   final bool deadEnd;
   final bool complete;
+
+  /// Onboarding target, independent of the scored hint action.
+  final int? guideTarget;
 
   /// Constellation name shown in the completion banner.
   final String? name;
@@ -175,6 +179,42 @@ class BoardPainter extends CustomPainter {
           ..color = p.gold.withValues(alpha: 0.8),
         cell * 0.1,
       );
+    }
+
+    final target = guideTarget;
+    if (target != null) {
+      final from = at(end);
+      final to = at(target);
+      final pulse = 0.5 + 0.5 * math.sin(t * 5);
+      final guide = Paint()
+        ..strokeCap = StrokeCap.round
+        ..strokeWidth = r * 0.18
+        ..color = p.gold.withValues(alpha: 0.65 + 0.35 * pulse);
+      canvas.drawCircle(
+        to,
+        r * (1.65 + 0.22 * pulse),
+        Paint()
+          ..style = PaintingStyle.stroke
+          ..strokeWidth = guide.strokeWidth
+          ..color = guide.color,
+      );
+      if (deadEnd) {
+        final direction = (to - from) / (to - from).distance;
+        final normal = Offset(-direction.dy, direction.dx);
+        final tip = Offset.lerp(from, to, 0.53)!;
+        final left = tip - direction * r * 0.7 + normal * r * 0.55;
+        final right = tip - direction * r * 0.7 - normal * r * 0.55;
+        final outline = Paint()
+          ..strokeCap = StrokeCap.round
+          ..strokeWidth = r * 0.48
+          ..color = p.skyTop;
+        for (final stroke in [outline, guide]) {
+          canvas.drawLine(left, tip, stroke);
+          canvas.drawLine(tip, right, stroke);
+        }
+      } else {
+        _paintDashed(canvas, from, to, guide, cell * 0.13);
+      }
     }
 
     // Knots.
@@ -492,6 +532,7 @@ class BoardPainter extends CustomPainter {
       old.deadEnd != deadEnd ||
       old.complete != complete ||
       old.name != name ||
+      old.guideTarget != guideTarget ||
       !setEquals(old.candidates, candidates) ||
       old.time != time ||
       old.drag != drag;

@@ -108,3 +108,9 @@ platform"으로 거절했다. One Line Labyrinth도 회색 원과 노란 선, Ma
 - `flutter build web --release --base-href /OneLineLabyrinth/`, `tool/build_crazygames.sh`, `tool/build_gamepix.sh`
 - 임시 골든 테스트로 1280x720, 390x844 화면과 결과 카드 PNG를 렌더링해 확인(확인 후 삭제)
 - `node <harness-lab>/dist/index.js audit . --format md`
+
+## CrazyGames starter sequence
+
+`feature-crazygames-starter-puzzles` defines the authored Easy levels and
+their visual guidance. Existing scoring, result, and collection apply to
+these levels.
