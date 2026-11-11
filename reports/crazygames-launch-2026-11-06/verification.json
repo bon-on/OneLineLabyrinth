@@ -1,0 +1,57 @@
+{
+  "generated_utc": "2026-11-06T15:20:48.659750+00:00",
+  "game": "OneLineLabyrinth",
+  "base_commit": "4f35897364c500a4d109e35c327cc7c62cf72ca8",
+  "head_commit": "4f35897364c500a4d109e35c327cc7c62cf72ca8",
+  "working_tree_dirty": true,
+  "build_inputs_sha256_at_report": "8bd181b75698d8291f9485fc2f7032a316a57ed11a2f7ba88f09cd5f40eddd14",
+  "commands": [
+    {
+      "argv": "flutter analyze --no-pub",
+      "exit": 0,
+      "evidence": "crazygames-launch-2026-11-06/analyze.log"
+    },
+    {
+      "argv": "flutter test --no-pub --reporter expanded",
+      "exit": 0,
+      "evidence": "crazygames-launch-2026-11-06/vm-tests.log"
+    },
+    {
+      "argv": "flutter test --no-pub --platform chrome test/web --timeout 60s --reporter expanded",
+      "exit": 0,
+      "evidence": "crazygames-launch-2026-11-06/chrome-tests.log"
+    },
+    {
+      "argv": "node <harness-lab>/dist/index.js audit . --format md",
+      "exit": 0,
+      "evidence": "crazygames-launch-2026-11-06/harness-audit.log"
+    },
+    {
+      "argv": "flutter build web --release --no-pub --base-href /OneLineLabyrinth/",
+      "exit": 0,
+      "evidence": "crazygames-launch-2026-11-06/pages-build.log"
+    },
+    {
+      "argv": "bash tool/build_crazygames.sh",
+      "exit": 0,
+      "evidence": "crazygames-launch-2026-11-06/crazygames-build.log"
+    }
+  ],
+  "vm_tests": 130,
+  "chrome_tests": 17,
+  "zip": {
+    "sha256": "03de76b21172933492bbbeea9fc8c92b03a7bb267d6b3f4521814ae6209e8bf1",
+    "zip_bytes": 12575476,
+    "files": 46,
+    "unpacked_bytes": 31059248,
+    "root_index": true,
+    "relative_base": true,
+    "sdk_v3": true,
+    "no_hub_links": true
+  },
+  "independent_review": {
+    "verdict": "approve",
+    "findings": 0
+  },
+  "portal_qa_established_by_local_checks": false
+}
