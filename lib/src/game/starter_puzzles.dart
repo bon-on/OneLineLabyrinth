@@ -2,6 +2,17 @@ import 'dart:math' as math;
 
 import '../../puzzle_generator.dart';
 
+/// Number of authored Easy levels; later Easy levels continue the generator's
+/// own ramp from its first level.
+const int starterLevelCount = 5;
+
+/// Generator level used for a generated board in the starter flow. Easy
+/// continues from the generator's first level after the authored boards.
+int starterGeneratorLevel(PuzzleDifficulty difficulty, int level) =>
+    difficulty == PuzzleDifficulty.easy
+    ? math.max(1, level - starterLevelCount)
+    : level;
+
 /// The authored Easy levels used at the start of the CrazyGames campaign.
 GridPuzzle? starterPuzzleFor(int level) {
   return switch (level) {

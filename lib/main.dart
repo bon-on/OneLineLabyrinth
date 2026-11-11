@@ -433,7 +433,10 @@ class _OneLineLabyrinthScreenState extends State<OneLineLabyrinthScreen>
         ? starterPuzzleFor(_level)
         : null;
     _isStarterPuzzle = starter != null;
-    _puzzle = starter ?? _generator.generate(_difficulty, _level);
+    final generatorLevel = widget.useStarterPuzzles
+        ? starterGeneratorLevel(_difficulty, _level)
+        : _level;
+    _puzzle = starter ?? _generator.generate(_difficulty, generatorLevel);
     _path = [_puzzle.start];
     _attempts = 0;
     _backtracks = 0;

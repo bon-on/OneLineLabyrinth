@@ -9,8 +9,9 @@ GamePix builds keep the tutorial modal and do not use the SDK.
 
 Easy levels 1–5 are fixed boards. The first board is playable immediately
 and highlights the first link. A dead end points back to the previous star.
-Use the question-mark button to open the full help card. Easy level 6 and
-all Normal and Hard levels use the puzzle generator.
+Use the question-mark button to open the full help card. Easy level 6
+onward uses the puzzle generator shifted by five levels so the size ramps
+smoothly; Normal and Hard use it unshifted.
 
 ## Build
 

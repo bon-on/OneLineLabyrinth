@@ -31,8 +31,12 @@ after the player has already had to learn the full game.
   The help button still opens the existing tutorial on demand.
 - Author Easy levels 1–5. The first has six stars and a single route. The
   remaining boards introduce branches, a recoverable dead end, and larger
-  route-planning challenges. Easy level 6 onward and all Normal and Hard
-  levels use the existing generator.
+  route-planning challenges. Easy level 6 onward uses the existing
+  generator shifted by five levels (Easy 6 generates generator level 1), so
+  the board size continues from the authored ramp (16 stars) instead of
+  jumping to 25. Normal and Hard levels use the generator unshifted. The
+  shift applies only while this flow is on; it changes which board a saved
+  Easy level 6+ shows, not any saved progress.
 - Easy level 1 highlights the first link and target until the line moves.
   In any authored level, show the prior star and an arrow back when stuck.
   Treat an early visit to the finish ring as a dead end in these levels,
@@ -56,7 +60,7 @@ after the player has already had to learn the full game.
 - Each authored board has a fixed, valid noncrossing solution. A wrong turn
   in Easy 3 demonstrates backtracking and the player can recover and finish.
 - The level map and restart preserve authored boards and existing progress.
-  Easy 6 and Normal/Hard remain generated.
+  Easy 6+ use the shifted generator and Normal/Hard remain generated.
 - First-board input and recovery cues work on a desktop iframe and a
   portrait mobile viewport. The 30-second first-clear target requires a
   first-time human playtest.

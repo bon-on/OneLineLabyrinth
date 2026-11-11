@@ -251,12 +251,11 @@ void main() {
         await tester.pump();
       }
 
-      expect(
-        _boardPainter(tester).puzzle.solution,
-        PuzzleGenerator(
-          random: math.Random(_seed),
-        ).generate(PuzzleDifficulty.easy, 6).solution,
-      );
+      final firstGenerated = PuzzleGenerator(
+        random: math.Random(_seed),
+      ).generate(PuzzleDifficulty.easy, 1);
+      expect(_boardPainter(tester).puzzle.solution, firstGenerated.solution);
+      expect(firstGenerated.nodeCount, 16);
       expect(progress.value.highestUnlocked(PuzzleDifficulty.easy), 6);
       await tester.tap(find.byTooltip('Level map'));
       await tester.pump();

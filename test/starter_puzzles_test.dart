@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:flutter_test/flutter_test.dart';
 import 'package:one_line_labyrinth/puzzle_generator.dart';
 import 'package:one_line_labyrinth/src/game/starter_puzzles.dart';
@@ -53,6 +55,25 @@ void main() {
       expect(replay.solution, solution, reason: reason);
     }
   });
+
+  test(
+    'later Easy levels continue the generator ramp after the authored set',
+    () {
+      final generator = PuzzleGenerator(random: math.Random(1));
+      int stars(int level) => generator
+          .generate(
+            PuzzleDifficulty.easy,
+            starterGeneratorLevel(PuzzleDifficulty.easy, level),
+          )
+          .nodeCount;
+
+      expect([for (var l = 6; l <= 10; l++) stars(l)], [16, 16, 20, 20, 25]);
+      expect(starterGeneratorLevel(PuzzleDifficulty.easy, 6), 1);
+      for (final d in [PuzzleDifficulty.normal, PuzzleDifficulty.hard]) {
+        expect(starterGeneratorLevel(d, 3), 3);
+      }
+    },
+  );
 
   test('the third board has a shortcut with a one-step recovery', () {
     final puzzle = starterPuzzleFor(3)!;
