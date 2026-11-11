@@ -75,6 +75,11 @@ void main() {
     },
   );
 
+  test('the authored level count matches the boards', () {
+    expect(starterPuzzleFor(starterLevelCount), isNotNull);
+    expect(starterPuzzleFor(starterLevelCount + 1), isNull);
+  });
+
   test('the third board has a shortcut with a one-step recovery', () {
     final puzzle = starterPuzzleFor(3)!;
     final visited = puzzle.solution.take(5).toSet();
