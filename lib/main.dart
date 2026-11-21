@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:math' as math;
 
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
 import 'package:flutter/services.dart';
@@ -147,7 +148,7 @@ class _OneLineLabyrinthScreenState extends State<OneLineLabyrinthScreen>
   // Undo steps and resets in this attempt (Clean line star).
   int _backtracks = 0;
   int _hints = 0;
-  int? _dragNode;
+  Offset? _previousDragPosition;
   // True while a pan gesture is feeding _stepTo (no error sound then).
   bool _dragging = false;
   late final TutorialStore _tutorialStore =
@@ -441,7 +442,7 @@ class _OneLineLabyrinthScreenState extends State<OneLineLabyrinthScreen>
     _attempts = 0;
     _backtracks = 0;
     _hints = 0;
-    _dragNode = null;
+    _previousDragPosition = null;
     _drag.value = null;
     _outcome = null;
     _revealStart = null;
@@ -533,7 +534,7 @@ class _OneLineLabyrinthScreenState extends State<OneLineLabyrinthScreen>
 
   void _onComplete() {
     _stopwatch.stop();
-    _dragNode = null;
+    _previousDragPosition = null;
     _drag.value = null;
     final now = _time.value;
     final seconds = math.max(1, (_stopwatch.elapsedMilliseconds / 1000).ceil());
@@ -634,21 +635,49 @@ class _OneLineLabyrinthScreenState extends State<OneLineLabyrinthScreen>
   }
 
   void _handleDrag(Offset position, double boardSize) {
+    final previous = _previousDragPosition;
+    _previousDragPosition = position;
     if (!_complete) _drag.value = position;
-    // A tighter radius while dragging avoids grabbing knots the line passes near.
-    final index = _hitNode(position, boardSize, 0.32);
-    if (index == null || index == _dragNode) return;
-    _dragNode = index;
+    final hits = <(double, int)>[];
+    if (previous == null) {
+      final index = _hitNode(position, boardSize, 0.32);
+      if (index != null) hits.add((0, index));
+    } else {
+      final delta = position - previous;
+      final length = delta.distance;
+      if (length == 0) return;
+      final direction = delta / length;
+      final radius = 0.32 * boardSize / math.max(_puzzle.columns, _puzzle.rows);
+      final radiusSquared = radius * radius;
+      for (var i = 0; i < _puzzle.nodeCount; i++) {
+        final node = _puzzle.nodes[i];
+        final offset =
+            Offset(node.x * boardSize, node.y * boardSize) - previous;
+        // A knot already under the pointer was processed by the last update.
+        if (offset.distanceSquared <= radiusSquared) continue;
+        final projection = offset.dx * direction.dx + offset.dy * direction.dy;
+        if (projection <= 0) continue;
+        final perpendicular = offset - direction * projection;
+        final chordSquared = radiusSquared - perpendicular.distanceSquared;
+        if (chordSquared < 0) continue;
+        final entry = projection - math.sqrt(chordSquared);
+        if (entry <= length) hits.add((entry, i));
+      }
+      hits.sort((a, b) => a.$1.compareTo(b.$1));
+    }
     _dragging = true;
     try {
-      _stepTo(index);
+      for (final (_, index) in hits) {
+        _stepTo(index);
+        if (_complete) break;
+      }
     } finally {
       _dragging = false;
     }
   }
 
   void _endDrag() {
-    _dragNode = null;
+    _previousDragPosition = null;
     _drag.value = null;
   }
 
@@ -1094,12 +1123,11 @@ class _OneLineLabyrinthScreenState extends State<OneLineLabyrinthScreen>
               child: GestureDetector(
                 key: const ValueKey('board'),
                 behavior: HitTestBehavior.opaque,
+                dragStartBehavior: DragStartBehavior.down,
                 onTapUp: (details) =>
                     _handleTap(details.localPosition, boardSize),
-                onPanStart: (details) {
-                  _dragNode = _path.last;
-                  _handleDrag(details.localPosition, boardSize);
-                },
+                onPanStart: (details) =>
+                    _handleDrag(details.localPosition, boardSize),
                 onPanUpdate: (details) =>
                     _handleDrag(details.localPosition, boardSize),
                 onPanEnd: (_) => _endDrag(),

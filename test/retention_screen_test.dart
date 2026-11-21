@@ -10,6 +10,8 @@ import 'package:one_line_labyrinth/main.dart';
 import 'package:one_line_labyrinth/platform/game_platform.dart';
 import 'package:one_line_labyrinth/puzzle_generator.dart';
 import 'package:one_line_labyrinth/src/art/sky_theme.dart';
+import 'package:one_line_labyrinth/src/game/board_painter.dart';
+import 'package:one_line_labyrinth/src/game/starter_puzzles.dart';
 import 'package:one_line_labyrinth/src/meta/constellations.dart';
 import 'package:one_line_labyrinth/src/meta/sky_progress.dart';
 import 'package:one_line_labyrinth/src/meta/sky_progress_store.dart';
@@ -73,6 +75,7 @@ Future<void> _pump(
   Size size = const Size(390, 844),
   SkyProgressStore? progress,
   BestLevelStore? best,
+  bool useStarterPuzzles = false,
 }) async {
   tester.view.physicalSize = size;
   tester.view.devicePixelRatio = 1;
@@ -83,6 +86,7 @@ Future<void> _pump(
       bestLevelStore: best ?? _MemoryBest(),
       tutorialStore: const _Seen(),
       progressStore: progress ?? MemorySkyProgressStore(),
+      useStarterPuzzles: useStarterPuzzles,
       platform: const NoopGamePlatform(allowsResultRegistration: false),
     ),
   );
@@ -105,6 +109,29 @@ Future<void> _frames(WidgetTester tester, [int count = 30]) async {
 
 void main() {
   setUp(() => SharedPreferences.setMockInitialValues({}));
+
+  testWidgets('fast drags visit and backtrack across intermediate knots', (
+    tester,
+  ) async {
+    await _pump(tester, useStarterPuzzles: true);
+    final puzzle = starterPuzzleFor(1)!;
+    final board = find.byWidgetPredicate(
+      (widget) => widget is CustomPaint && widget.painter is BoardPainter,
+    );
+    List<int> path() =>
+        (tester.widget<CustomPaint>(board).painter! as BoardPainter).path;
+
+    final start = _at(tester, puzzle, 0);
+    final gesture = await tester.startGesture(start);
+    await gesture.moveTo(_at(tester, puzzle, 2));
+    await tester.pump();
+    expect(path(), [0, 1, 2]);
+
+    await gesture.moveTo(start);
+    await gesture.up();
+    await tester.pump();
+    expect(path(), [0]);
+  });
 
   testWidgets('a clean fast solve earns 3 stars, XP and an album entry', (
     tester,
