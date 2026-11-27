@@ -163,66 +163,87 @@ class _HowToPlayOverlayState extends State<HowToPlayOverlay> {
                       palette: p,
                       highlight: true,
                       padding: EdgeInsets.zero,
-                      child: SingleChildScrollView(
-                        padding: const EdgeInsets.all(20),
-                        child: Column(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Text(
-                              'How to play',
-                              style: TextStyle(
-                                fontSize: 22,
-                                fontWeight: FontWeight.w900,
-                                color: p.text,
-                              ),
-                            ),
-                            const SizedBox(height: 16),
-                            Container(
-                              width: 76,
-                              height: 76,
-                              decoration: BoxDecoration(
-                                shape: BoxShape.circle,
-                                gradient: RadialGradient(
-                                  colors: <Color>[
-                                    p.thread.withValues(alpha: 0.45),
-                                    p.thread.withValues(alpha: 0),
-                                  ],
-                                ),
-                              ),
-                              child: Icon(step.icon, size: 46, color: p.thread),
-                            ),
-                            const SizedBox(height: 12),
-                            Text(
-                              step.text,
-                              textAlign: TextAlign.center,
-                              style: TextStyle(
-                                fontSize: 15,
-                                height: 1.35,
-                                color: p.text,
-                              ),
-                            ),
-                            const SizedBox(height: 16),
-                            Row(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                for (var i = 0; i < widget.steps.length; i++)
-                                  Container(
-                                    width: i == _step ? 18 : 8,
-                                    height: 8,
-                                    margin: const EdgeInsets.symmetric(
-                                      horizontal: 3,
-                                    ),
-                                    decoration: BoxDecoration(
-                                      borderRadius: BorderRadius.circular(4),
-                                      color: i == _step
-                                          ? p.thread
-                                          : p.panelBorder,
+                      // Skip and Next stay pinned below the scrolling step
+                      // so short or landscape phones can always leave.
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Flexible(
+                            child: SingleChildScrollView(
+                              padding: const EdgeInsets.fromLTRB(20, 20, 20, 0),
+                              child: Column(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Text(
+                                    'How to play',
+                                    style: TextStyle(
+                                      fontSize: 22,
+                                      fontWeight: FontWeight.w900,
+                                      color: p.text,
                                     ),
                                   ),
-                              ],
+                                  const SizedBox(height: 16),
+                                  Container(
+                                    width: 76,
+                                    height: 76,
+                                    decoration: BoxDecoration(
+                                      shape: BoxShape.circle,
+                                      gradient: RadialGradient(
+                                        colors: <Color>[
+                                          p.thread.withValues(alpha: 0.45),
+                                          p.thread.withValues(alpha: 0),
+                                        ],
+                                      ),
+                                    ),
+                                    child: Icon(
+                                      step.icon,
+                                      size: 46,
+                                      color: p.thread,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 12),
+                                  Text(
+                                    step.text,
+                                    textAlign: TextAlign.center,
+                                    style: TextStyle(
+                                      fontSize: 15,
+                                      height: 1.35,
+                                      color: p.text,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 16),
+                                  Row(
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    children: [
+                                      for (
+                                        var i = 0;
+                                        i < widget.steps.length;
+                                        i++
+                                      )
+                                        Container(
+                                          width: i == _step ? 18 : 8,
+                                          height: 8,
+                                          margin: const EdgeInsets.symmetric(
+                                            horizontal: 3,
+                                          ),
+                                          decoration: BoxDecoration(
+                                            borderRadius: BorderRadius.circular(
+                                              4,
+                                            ),
+                                            color: i == _step
+                                                ? p.thread
+                                                : p.panelBorder,
+                                          ),
+                                        ),
+                                    ],
+                                  ),
+                                ],
+                              ),
                             ),
-                            const SizedBox(height: 14),
-                            Row(
+                          ),
+                          Padding(
+                            padding: const EdgeInsets.fromLTRB(20, 14, 20, 20),
+                            child: Row(
                               mainAxisAlignment: MainAxisAlignment.spaceBetween,
                               children: [
                                 TextButton(
@@ -240,8 +261,8 @@ class _HowToPlayOverlayState extends State<HowToPlayOverlay> {
                                 ),
                               ],
                             ),
-                          ],
-                        ),
+                          ),
+                        ],
                       ),
                     ),
                   ),
