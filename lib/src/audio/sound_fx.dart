@@ -43,7 +43,7 @@ abstract class MusicPlayer {
   void stop();
 }
 
-/// Web: a dedicated HTML audio element. Native: `startLoop` / `stopLoop` on
+/// Web: a dedicated Web Audio loop source. Native: `startLoop` / `stopLoop` on
 /// the `one_line_labyrinth/audio` channel. Failures are swallowed.
 class PlatformMusicPlayer implements MusicPlayer {
   PlatformMusicPlayer({WebSound? web}) : _web = web ?? WebSound();
@@ -106,7 +106,7 @@ abstract class SoundPlayer {
   void dispose();
 }
 
-/// Web: HTML audio elements. Native: the `one_line_labyrinth/audio` channel.
+/// Web: Web Audio buffer sources. Native: the `one_line_labyrinth/audio` channel.
 /// Every failure is swallowed so audio can never block input.
 class PlatformSoundPlayer implements SoundPlayer {
   static const MethodChannel _channel = MethodChannel(
