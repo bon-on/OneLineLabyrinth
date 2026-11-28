@@ -4,6 +4,7 @@ title: One Line Labyrinth GamePix web distribution contract
 status: active
 related_specs:
   - feature-one-line-labyrinth-gamepix
+  - feature-gamepix-sdk
 evidence_files:
   - docs/gamepix.md
   - reports/one-line-labyrinth-gamepix-verification.md
@@ -12,14 +13,14 @@ evidence_files:
 # Contract: One Line Labyrinth GamePix web distribution
 
 ## Goal
-Produce an upload-ready, SDK-free GamePix web bundle from the same Flutter codebase.
+Produce an upload-ready GamePix (SDK v3, feature-gamepix-sdk) web bundle from the same Flutter codebase.
 
 ## Scope
-- `--dart-define=GAMEPIX=true` selects `NoopGamePlatform(allowsResultRegistration: false)` in `lib/platform/game_platform_factory_web.dart`.
+- `--dart-define=GAMEPIX=true` selects `GamePixPlatform` in `lib/platform/game_platform_factory_web.dart`.
 - Bundled Roboto font (`assets/fonts/`), CSS loader in `web/index.html`.
 - `tool/build_gamepix.sh` and `docs/gamepix.md`.
 
-Excluded: gameplay changes, GamePix SDK, ads, portal upload.
+Excluded: puzzle changes, portal upload.
 
 ## Done Criteria
 - `flutter analyze`, `flutter test` and `flutter test --platform chrome test/web` pass.

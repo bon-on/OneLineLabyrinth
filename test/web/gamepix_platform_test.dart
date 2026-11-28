@@ -6,6 +6,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:one_line_labyrinth/platform/crazygames_platform.dart';
 import 'package:one_line_labyrinth/platform/game_platform.dart';
 import 'package:one_line_labyrinth/platform/game_platform_factory_web.dart';
+import 'package:one_line_labyrinth/platform/gamepix_platform.dart';
 
 void main() {
   test('default web build keeps the no-op platform with registration', () {
@@ -14,9 +15,9 @@ void main() {
     expect(platform.allowsResultRegistration, isTrue);
   });
 
-  test('GamePix build is a no-op without result registration', () {
+  test('GamePix build uses the SDK adapter without result registration', () {
     final platform = selectGamePlatform(crazyGames: false, gamePix: true);
-    expect(platform, isA<NoopGamePlatform>());
+    expect(platform, isA<GamePixPlatform>());
     expect(platform.allowsResultRegistration, isFalse);
   });
 

@@ -65,7 +65,7 @@ GitHub Pages deploys from `.github/workflows/deploy-pages.yml`.
 
 ## GamePix Web Build
 
-`tool/build_gamepix.sh` builds `build/gamepix/` and the upload zip `build/one-line-labyrinth-gamepix.zip` (SDK-free; no hub link, leaderboard or ads). See `docs/gamepix.md`. Roboto is bundled in `assets/fonts/` (see `assets/fonts/Roboto_LICENSE.txt`) so web builds make no font requests.
+`tool/build_gamepix.sh` builds `build/gamepix/` and the upload zip `build/one-line-labyrinth-gamepix.zip` (GamePix SDK v3: pause/resume, lifecycle, ads between mazes; no hub link or leaderboard). See `docs/gamepix.md`. Roboto is bundled in `assets/fonts/` (see `assets/fonts/Roboto_LICENSE.txt`) so web builds make no font requests.
 
 ## Sounds
 

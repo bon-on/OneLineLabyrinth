@@ -159,9 +159,15 @@ class _OneLineLabyrinthScreenState extends State<OneLineLabyrinthScreen>
   // not reported before we know whether the tutorial is about to open.
   late bool _tutorialLoading = !widget.useStarterPuzzles;
   bool _starterBoardReady = false;
-  bool _appActive =
+  bool _lifecycleActive =
       WidgetsBinding.instance.lifecycleState == null ||
       WidgetsBinding.instance.lifecycleState == AppLifecycleState.resumed;
+  // The portal (GamePix Player overlays and ads) asked the game to pause.
+  bool _portalPaused = false;
+  // Input and the clock run only while the tab is visible and not paused.
+  late bool _appActive = _lifecycleActive;
+  // A break ad is playing before the next maze (feature-gamepix-sdk).
+  bool _breakAdInProgress = false;
   // Whether the platform currently believes gameplay is running.
   bool _gameplayActive = false;
   _Menu _menu = _Menu.none;
@@ -217,6 +223,7 @@ class _OneLineLabyrinthScreenState extends State<OneLineLabyrinthScreen>
       (widget.useStarterPuzzles && !_starterBoardReady) ||
       _tutorialLoading ||
       _tutorialOpen ||
+      _breakAdInProgress ||
       _menu != _Menu.none;
 
   @override
@@ -247,6 +254,7 @@ class _OneLineLabyrinthScreenState extends State<OneLineLabyrinthScreen>
     } else {
       _maybeShowTutorial();
     }
+    widget.platform.setPauseListener(_onPortalPause);
   }
 
   void _onSoundChanged() {
@@ -254,7 +262,20 @@ class _OneLineLabyrinthScreenState extends State<OneLineLabyrinthScreen>
   }
 
   void _onAppLifecycleChanged(AppLifecycleState state) {
-    final active = state == AppLifecycleState.resumed;
+    _lifecycleActive = state == AppLifecycleState.resumed;
+    _applyActive();
+  }
+
+  void _onPortalPause(bool paused) {
+    if (!mounted) return;
+    _portalPaused = paused;
+    _applyActive();
+  }
+
+  /// Stops the clock and input while the tab is hidden or the portal paused
+  /// the game, and restarts the clock once both allow play again.
+  void _applyActive() {
+    final active = _lifecycleActive && !_portalPaused;
     if (_appActive == active) return;
     setState(() => _appActive = active);
     _sound.setAppVisible(_appActive);
@@ -270,6 +291,7 @@ class _OneLineLabyrinthScreenState extends State<OneLineLabyrinthScreen>
   void dispose() {
     HardwareKeyboard.instance.removeHandler(_onHardwareKey);
     widget.platform.setAudioMuteListener(null);
+    widget.platform.setPauseListener(null);
     _lifecycle.dispose();
     _ticker.dispose();
     _sound.removeListener(_onSoundChanged);
@@ -574,13 +596,52 @@ class _OneLineLabyrinthScreenState extends State<OneLineLabyrinthScreen>
     });
   }
 
-  void _nextLevel() {
+  /// Runs [action] right away, or after the portal's break ad where the
+  /// platform shows them (feature-gamepix-sdk). Only used for moves on from a
+  /// solved maze: never mid-maze, never for Reset. Input is blocked while the
+  /// ad runs, and the state is rechecked before [action] runs.
+  void _afterBreakAd(VoidCallback action) {
+    if (!widget.platform.showsRunBreakAds) {
+      action();
+      return;
+    }
+    if (_breakAdInProgress) return;
+    final puzzle = _puzzle;
+    setState(() => _breakAdInProgress = true);
+    _runBreakAd(puzzle, action);
+  }
+
+  Future<void> _runBreakAd(GridPuzzle puzzle, VoidCallback action) async {
+    try {
+      await widget.platform.showRunBreakAd();
+    } catch (_) {
+      // A failed ad never keeps the player from the next maze.
+    }
+    if (!mounted) return;
+    setState(() => _breakAdInProgress = false);
+    if (identical(_puzzle, puzzle) && _complete) action();
+    _syncGameplay();
+  }
+
+  void _nextLevel() => _afterBreakAd(_advanceLevel);
+
+  /// The New puzzle / Restart button: an ad only when it leaves a solved maze.
+  void _newPuzzleAction() {
+    if (_complete) {
+      _afterBreakAd(_newPuzzle);
+    } else {
+      _newPuzzle();
+    }
+  }
+
+  void _advanceLevel() {
     _level++;
     _newPuzzle();
     _gameFocus.requestFocus();
   }
 
   void _replayLevel() {
+    if (_breakAdInProgress) return;
     _newPuzzle();
     _gameFocus.requestFocus();
   }
@@ -704,7 +765,7 @@ class _OneLineLabyrinthScreenState extends State<OneLineLabyrinthScreen>
     } else if (key == LogicalKeyboardKey.keyR) {
       _resetPath();
     } else if (key == LogicalKeyboardKey.keyN) {
-      _newPuzzle();
+      _newPuzzleAction();
     } else if (key == LogicalKeyboardKey.keyH) {
       _useHint();
     } else if (key == LogicalKeyboardKey.keyM) {
@@ -763,9 +824,10 @@ class _OneLineLabyrinthScreenState extends State<OneLineLabyrinthScreen>
                 ),
               ),
               Positioned.fill(
-                // Ignore touches until the stored tutorial flag has been read.
+                // Ignore touches until the stored tutorial flag has been read,
+                // and while a break ad runs (feature-gamepix-sdk).
                 child: AbsorbPointer(
-                  absorbing: _tutorialLoading,
+                  absorbing: _tutorialLoading || _breakAdInProgress,
                   // Keep Tab from moving focus to HUD buttons behind overlays.
                   child: ExcludeFocus(
                     excluding: _inputBlocked,
@@ -943,7 +1005,7 @@ class _OneLineLabyrinthScreenState extends State<OneLineLabyrinthScreen>
           palette: p,
           icon: _isStarterPuzzle ? Icons.restart_alt : Icons.shuffle_rounded,
           tooltip: _isStarterPuzzle ? 'Restart puzzle' : 'New puzzle',
-          onPressed: _newPuzzle,
+          onPressed: _breakAdInProgress ? null : _newPuzzleAction,
         ),
         SkyIconButton(
           palette: p,

@@ -5,6 +5,7 @@ status: active
 owner: games
 related_adrs:
   - adr-one-line-labyrinth-crazygames-web
+  - adr-gamepix-sdk
 related_contracts:
   - contract-one-line-labyrinth-gamepix
 required_evidence:
@@ -17,22 +18,22 @@ required_evidence:
 # Feature: One Line Labyrinth GamePix web distribution
 
 ## Problem
-GamePix requires an HTML5 bundle that loads only from relative paths, has no third-party SDK, no outbound links or external network use, and shows a loading screen while the engine starts.
+GamePix requires an HTML5 bundle that loads only from relative paths, has no outbound links or external network use, and shows a loading screen while the engine starts.
 
 ## Scope
-- A web bundle built with `--dart-define=GAMEPIX=true` uses a no-op `GamePlatform` whose `allowsResultRegistration` is false. No SDK is integrated. The CrazyGames adapter is selected only by `CRAZYGAMES=true` and is tree-shaken out of the GamePix bundle. The game has no ad network, so ads stay off.
+- A web bundle built with `--dart-define=GAMEPIX=true` uses `GamePixPlatform` (SDK v3, see `feature-gamepix-sdk` and `adr-gamepix-sdk`, which supersede the former SDK-free, no-ads rule), whose `allowsResultRegistration` is false. The CrazyGames adapter is selected only by `CRAZYGAMES=true` and is tree-shaken out of the GamePix bundle.
 - No leaderboard prompt or result upload (external network) and no Bon-on hub link in this bundle: the build script removes the hub navigation bar and its reserved height.
 - Resources load from relative paths only: `--no-web-resources-cdn`, `<base href="./">`. Roboto is bundled in `assets/fonts/` (all builds) so the app does not fetch it from fonts.gstatic.com.
 - A CSS loader (spinner and game title, no external assets) in `web/index.html` shows until Flutter paints its first frame (`flutter-first-frame`), in Pages, CrazyGames and GamePix builds.
 - `tool/build_gamepix.sh` produces `build/gamepix/` and `build/one-line-labyrinth-gamepix.zip` with `index.html` at the zip root and self-checks the result.
 
-Out of scope: gameplay changes, the GamePix SDK, ads, portal upload, store artwork.
+Out of scope: gameplay changes, the SDK behaviour (see `feature-gamepix-sdk`), portal upload, store artwork.
 
 ## Acceptance Criteria
-- `flutter analyze` and `flutter test` pass; `flutter test --platform chrome test/web` passes (GAMEPIX selection: no-op with `allowsResultRegistration == false`; CrazyGames adapter only for `CRAZYGAMES`).
-- `tool/build_gamepix.sh` succeeds: `<base href="./">`, no `crazygames` / `bon-on.github.io` / external script in `index.html`, `index.html` at the zip root, `FontManifest.json` lists Roboto.
+- `flutter analyze` and `flutter test` pass; `flutter test --platform chrome test/web` passes (GAMEPIX selection: `GamePixPlatform` with `allowsResultRegistration == false`; CrazyGames adapter only for `CRAZYGAMES`).
+- `tool/build_gamepix.sh` succeeds: `<base href="./">`, no `crazygames` / `bon-on.github.io` in `index.html`, no external script other than the GamePix SDK, `index.html` at the zip root, `FontManifest.json` lists Roboto.
 - The GamePix `main.dart.js` contains no CrazyGames adapter strings (count reported).
-- The bundle renders without overflow at 640x480 and 360x640 and makes no external requests.
+- The bundle renders without overflow at 640x480 and 360x640 and makes no external requests other than the GamePix SDK.
 - `tool/build_crazygames.sh` and the GitHub Pages build still pass; the loader is removed after the first frame.
 - `web/index.html` keeps a `user-scalable=no` viewport meta and `touch-action: none` on `body`.
 

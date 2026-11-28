@@ -3,7 +3,7 @@
 Building with `--dart-define=CRAZYGAMES=true` enables the CrazyGames HTML5 SDK v3
 adapter and the playable Easy starter sequence. The GitHub Pages build enables the same starter sequence with
 `--dart-define=STARTER_PUZZLES=true` but never loads the SDK; native and
-GamePix builds keep the tutorial modal and do not use the SDK.
+GamePix builds keep the tutorial modal and use the GamePix SDK instead (docs/gamepix.md).
 
 ## First session
 

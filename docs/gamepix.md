@@ -1,6 +1,6 @@
 # GamePix upload
 
-A web build made with `--dart-define=GAMEPIX=true` is SDK-free: no third-party script, no hub link, no leaderboard upload, no ads, no external requests. Other builds (GitHub Pages, CrazyGames, mobile) are unaffected.
+A web build made with `--dart-define=GAMEPIX=true` integrates the GamePix HTML5 SDK v3 (`feature-gamepix-sdk`): the SDK script is the only third-party script; no hub link, no leaderboard upload. Other builds (GitHub Pages, CrazyGames, mobile) are unaffected.
 
 ## Build
 
@@ -17,8 +17,9 @@ The script runs `flutter build web --release --base-href / --no-web-resources-cd
 
 1. sets `<base href="./">`;
 2. removes the Bon-on hub navigation bar and sets its height to 0, and drops the template comment with an external URL;
-3. checks that `index.html` has no `crazygames`/`bon-on.github.io` text, no external script or link, and that `FontManifest.json` lists Roboto;
-4. deletes `*.symbols`, zips the folder, verifies `index.html` is at the zip root and prints the file count, size and the number of `crazygames` strings left in `main.dart.js`.
+3. injects `window.GamePixConfig = { lifecycle: 'manual' }` and the SDK script (`https://integration.gamepix.com/sdk/v3/gamepix.sdk.js`) before the Flutter bootstrap, and checks order and uniqueness;
+4. checks that `index.html` has no `crazygames`/`bon-on.github.io` text, no external script or link besides the SDK, and that `FontManifest.json` lists Roboto;
+5. deletes `*.symbols`, zips the folder, verifies `index.html` is at the zip root, fails when `crazygames` appears in `main.dart.js`, and prints the file count and size.
 
 Roboto is bundled in `assets/fonts/` (license: `assets/fonts/Roboto_LICENSE.txt`), so the app never downloads it from fonts.gstatic.com.
 
@@ -32,11 +33,16 @@ cd build && python3 -m http.server 8765
 ## Upload checklist
 
 - [ ] Zip: `build/one-line-labyrinth-gamepix.zip`.
-- [ ] SDK integration: none.
+- [ ] SDK integration: GamePix SDK v3 (manual lifecycle, pause/resume/soundOff/soundOn, `loaded()`/`gameStart()`, interstitials after a solved maze, save data in the `onelinelabyrinth.prefs_v1` localStorage item).
 - [ ] Orientation: portrait and landscape both supported (layout adapts).
 - [ ] Desktop and Mobile friendly: yes (touch and mouse). Input: Tap and drag (touch or mouse).
 - [ ] Icon 256x256 and cover 1360x850 (not created yet).
 - [ ] Language: English.
+
+## SDK behaviour
+
+- Interstitials show only when moving on from a solved maze (Next Level, New puzzle / Restart after a solve), never mid-maze or on Reset, at least 2 minutes apart; input is blocked while one runs.
+- `pause` mutes audio, stops the solve clock and blocks input until `resume`.
 
 ## Known limits
 

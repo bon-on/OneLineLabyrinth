@@ -35,7 +35,7 @@ outbound links, and expects SDK gameplay events.
   the script verifies them.
 
 ## GamePix addendum
-GamePix builds (`--dart-define=GAMEPIX=true`, see `feature-one-line-labyrinth-gamepix`) reuse the no-op platform with `allowsResultRegistration == false` instead of an adapter: GamePix forbids third-party SDKs and external network use. The CrazyGames adapter is selected only by `CRAZYGAMES=true`.
+GamePix builds (`--dart-define=GAMEPIX=true`, see `feature-one-line-labyrinth-gamepix`) first reused the no-op platform with `allowsResultRegistration == false`; `adr-gamepix-sdk` supersedes that with the GamePix SDK v3 adapter. The CrazyGames adapter is selected only by `CRAZYGAMES=true`.
 
 ## Playable onboarding addendum
 

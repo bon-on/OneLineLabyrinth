@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
@@ -14,7 +15,28 @@ import 'package:one_line_labyrinth/src/meta/sky_progress.dart';
 import 'package:one_line_labyrinth/src/meta/sky_progress_store.dart';
 
 class _FakePlatform extends GamePlatform {
-  _FakePlatform({this.allowsResultRegistration = false});
+  _FakePlatform({
+    this.allowsResultRegistration = false,
+    this.showsRunBreakAds = false,
+  });
+
+  @override
+  final bool showsRunBreakAds;
+
+  /// Completes the ad in flight; null when no ad was requested.
+  Completer<void>? ad;
+
+  void Function(bool paused)? pauseListener;
+
+  @override
+  Future<void> showRunBreakAd() {
+    events.add('ad');
+    return (ad = Completer<void>()).future;
+  }
+
+  @override
+  void setPauseListener(void Function(bool paused)? listener) =>
+      pauseListener = listener;
 
   @override
   final bool allowsResultRegistration;
@@ -441,6 +463,99 @@ void main() {
     await tester.tap(find.byTooltip('New puzzle'));
     await tester.pump();
     expect(platform.events, <String>['start', 'stop', 'start']);
+  });
+
+  testWidgets('the next maze after a solve waits for the break ad', (
+    tester,
+  ) async {
+    final platform = _FakePlatform(showsRunBreakAds: true);
+    await _pump(tester, platform, _Tutorial(seen: true));
+
+    // Mid-maze: a step and Reset never show an ad.
+    final puzzle = _puzzle;
+    await _tapNodes(tester, _puzzle, [puzzle.solution[1]]);
+    await tester.tap(find.byTooltip('Reset path'));
+    await tester.pump();
+    expect(platform.events, <String>['start'], reason: 'no ad mid-maze');
+
+    await _solve(tester);
+    expect(find.text('Next Level'), findsOneWidget);
+    await tester.tap(find.text('Next Level'));
+    await tester.pump();
+    await tester.tap(find.text('Next Level'));
+    await tester.pump();
+    expect(platform.events, <String>['start', 'stop', 'ad']);
+    expect(find.text('Next Level'), findsOneWidget, reason: 'ad still runs');
+
+    platform.ad!.complete();
+    await tester.pump();
+    expect(platform.events, <String>['start', 'stop', 'ad', 'start']);
+    expect(find.text('Next Level'), findsNothing);
+  });
+
+  testWidgets('Replay is ignored while the break ad runs', (tester) async {
+    final platform = _FakePlatform(showsRunBreakAds: true);
+    await _pump(tester, platform, _Tutorial(seen: true));
+    await _solve(tester);
+    await tester.tap(find.text('Next Level'));
+    await tester.pump();
+    expect(platform.events, <String>['start', 'stop', 'ad']);
+
+    await tester.tap(find.text('Replay'), warnIfMissed: false);
+    await tester.pump();
+    expect(find.text('Next Level'), findsOneWidget, reason: 'no new maze yet');
+    expect(platform.events, <String>['start', 'stop', 'ad']);
+
+    platform.ad!.complete();
+    await tester.pump();
+    expect(platform.events, <String>['start', 'stop', 'ad', 'start']);
+  });
+
+  testWidgets('new puzzle mid-maze never shows a break ad', (tester) async {
+    final platform = _FakePlatform(showsRunBreakAds: true);
+    await _pump(tester, platform, _Tutorial(seen: true));
+    await tester.tap(find.byTooltip('New puzzle'));
+    await tester.pump();
+    expect(platform.events, <String>['start']);
+  });
+
+  testWidgets('new puzzle after a solve waits for the break ad', (
+    tester,
+  ) async {
+    final platform = _FakePlatform(showsRunBreakAds: true);
+    await _pump(tester, platform, _Tutorial(seen: true));
+    await _solve(tester);
+
+    await tester.tap(find.byTooltip('New puzzle'));
+    await tester.pump();
+    expect(platform.events, <String>['start', 'stop', 'ad']);
+
+    platform.ad!.complete();
+    await tester.pump();
+    expect(platform.events, <String>['start', 'stop', 'ad', 'start']);
+  });
+
+  testWidgets('a portal pause stops play until it resumes', (tester) async {
+    final platform = _FakePlatform();
+    final stopwatch = Stopwatch();
+    await _pump(tester, platform, _Tutorial(seen: true), stopwatch: stopwatch);
+    expect(platform.pauseListener, isNotNull);
+    expect(stopwatch.isRunning, isTrue);
+
+    platform.pauseListener!(true);
+    await tester.pump();
+    platform.pauseListener!(true);
+    await tester.pump();
+    expect(platform.events, <String>['start', 'stop']);
+    expect(stopwatch.isRunning, isFalse);
+
+    platform.pauseListener!(false);
+    await tester.pump();
+    expect(platform.events, <String>['start', 'stop', 'start']);
+    expect(stopwatch.isRunning, isTrue);
+
+    await tester.pumpWidget(const SizedBox.shrink());
+    expect(platform.pauseListener, isNull);
   });
 
   testWidgets('leaderboard offer follows the platform', (tester) async {
