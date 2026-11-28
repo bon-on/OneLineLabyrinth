@@ -549,6 +549,11 @@ void main() {
     expect(platform.events, <String>['start', 'stop']);
     expect(stopwatch.isRunning, isFalse);
 
+    await tester.tap(find.text('Normal'), warnIfMissed: false);
+    await tester.pump();
+    expect(find.text('1/16'), findsOneWidget);
+    expect(find.text('1/25'), findsNothing);
+
     platform.pauseListener!(false);
     await tester.pump();
     expect(platform.events, <String>['start', 'stop', 'start']);

@@ -803,79 +803,88 @@ class _OneLineLabyrinthScreenState extends State<OneLineLabyrinthScreen>
     final p = _palette;
     return Scaffold(
       resizeToAvoidBottomInset: false,
-      body: Listener(
-        onPointerDown: (_) => _onAnyInput(),
-        // Mobile browsers grant audio on touch end, not touch start.
-        onPointerUp: (_) => _onAnyInput(),
-        child: Focus(
-          focusNode: _gameFocus,
-          autofocus: true,
-          onKeyEvent: _onGameKey,
-          child: Stack(
-            children: [
-              Positioned.fill(
-                child: RepaintBoundary(
-                  child: CustomPaint(
-                    painter: SkyPainter(
-                      theme: _progress.selectedTheme,
-                      time: _time,
+      body: AbsorbPointer(
+        absorbing: _portalPaused,
+        child: ExcludeFocus(
+          excluding: _portalPaused,
+          child: Listener(
+            onPointerDown: (_) => _onAnyInput(),
+            // Mobile browsers grant audio on touch end, not touch start.
+            onPointerUp: (_) => _onAnyInput(),
+            child: Focus(
+              focusNode: _gameFocus,
+              autofocus: true,
+              onKeyEvent: _onGameKey,
+              child: Stack(
+                children: [
+                  Positioned.fill(
+                    child: RepaintBoundary(
+                      child: CustomPaint(
+                        painter: SkyPainter(
+                          theme: _progress.selectedTheme,
+                          time: _time,
+                        ),
+                      ),
                     ),
                   ),
-                ),
-              ),
-              Positioned.fill(
-                // Ignore touches until the stored tutorial flag has been read,
-                // and while a break ad runs (feature-gamepix-sdk).
-                child: AbsorbPointer(
-                  absorbing: _tutorialLoading || _breakAdInProgress,
-                  // Keep Tab from moving focus to HUD buttons behind overlays.
-                  child: ExcludeFocus(
-                    excluding: _inputBlocked,
-                    child: _buildGame(p),
-                  ),
-                ),
-              ),
-              if (_tutorialOpen)
-                Positioned.fill(
-                  child: HowToPlayOverlay(onClose: _closeTutorial, palette: p),
-                ),
-              if (_menu == _Menu.map)
-                Positioned.fill(
-                  child: LevelMapOverlay(
-                    palette: p,
-                    progress: _progress,
-                    difficulty: _difficulty,
-                    currentLevel: _level,
-                    onPick: _pickLevel,
-                    onClose: _closeMenu,
-                  ),
-                ),
-              if (_menu == _Menu.album)
-                Positioned.fill(
-                  child: AlbumOverlay(
-                    palette: p,
-                    progress: _progress,
-                    onClose: _closeMenu,
-                  ),
-                ),
-              if (_menu == _Menu.themes)
-                Positioned.fill(
-                  child: SkyOverlay(
-                    palette: p,
-                    title: 'Sky themes',
-                    subtitle: 'Raise your sky level to unlock new skies.',
-                    maxWidth: 420,
-                    onClose: _closeMenu,
-                    child: ThemePicker(
-                      palette: p,
-                      selected: _progress.selectedTheme,
-                      skyLevel: _progress.level,
-                      onSelected: _selectTheme,
-                      swatch: 70,
+                  Positioned.fill(
+                    // Ignore touches until the stored tutorial flag has been read,
+                    // and while a break ad runs (feature-gamepix-sdk).
+                    child: AbsorbPointer(
+                      absorbing: _tutorialLoading || _breakAdInProgress,
+                      // Keep Tab from moving focus to HUD buttons behind overlays.
+                      child: ExcludeFocus(
+                        excluding: _inputBlocked,
+                        child: _buildGame(p),
+                      ),
                     ),
                   ),
-                ),
-            ],
+                  if (_tutorialOpen)
+                    Positioned.fill(
+                      child: HowToPlayOverlay(
+                        onClose: _closeTutorial,
+                        palette: p,
+                      ),
+                    ),
+                  if (_menu == _Menu.map)
+                    Positioned.fill(
+                      child: LevelMapOverlay(
+                        palette: p,
+                        progress: _progress,
+                        difficulty: _difficulty,
+                        currentLevel: _level,
+                        onPick: _pickLevel,
+                        onClose: _closeMenu,
+                      ),
+                    ),
+                  if (_menu == _Menu.album)
+                    Positioned.fill(
+                      child: AlbumOverlay(
+                        palette: p,
+                        progress: _progress,
+                        onClose: _closeMenu,
+                      ),
+                    ),
+                  if (_menu == _Menu.themes)
+                    Positioned.fill(
+                      child: SkyOverlay(
+                        palette: p,
+                        title: 'Sky themes',
+                        subtitle: 'Raise your sky level to unlock new skies.',
+                        maxWidth: 420,
+                        onClose: _closeMenu,
+                        child: ThemePicker(
+                          palette: p,
+                          selected: _progress.selectedTheme,
+                          skyLevel: _progress.level,
+                          onSelected: _selectTheme,
+                          swatch: 70,
+                        ),
+                      ),
+                    ),
+                ],
+              ),
+            ),
           ),
         ),
       ),
